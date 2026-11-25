@@ -279,6 +279,7 @@
   "desktop-mode": "Yanayin kwamfuta",
   "mobile-mode": "Yanayin wayar hannu",
   "mobile-desktop-toggle": "Canja tsakanin yanayin wayar hannu da kwamfuta",
+  "html4-html5-toggle": "Canja tsakanin duban HTML4 da HTML5",
   "zoom-in": "Ƙara girma",
   "zoom-out": "Rage girma",
   "zoom-level": "Matakin girma",
@@ -850,6 +851,7 @@
   "export": "Fitar da",
   "export-board": "Fitar da allo",
   "export-board-without-attachments": "ba tare da maƙaloli ba",
+  "export-board-without-archive": "ba tare da abubuwan da aka adana ba",
   "export-ical-feed": "Kalanda (iCal)",
   "user-can-not-export-excel": "Mai amfani ba zai iya fitar da Excel ba",
   "export-card": "Fitar da kati",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "An share",
   "gitea-freed": "an 'yanta",
   "gitea-deleted-list": "Rumbunan lamba da aka share",
-  "gitea-index-stale": "Ya tsufa tun bayan sharewa: sake aunawa don girman daidai."
+  "gitea-index-stale": "Ya tsufa tun bayan sharewa: sake aunawa don girman daidai.",
+  "gitea-db-migration-version": "Sigar ƙaura ta rumbun bayanai na Gitea",
+  "gitea-orphans-delete": "Share duk marayu",
+  "gitea-orphans-delete-confirm": "Wannan yana share har abada daga babban fayil na Gitea fayilolin marayu waɗanda babu abin da ke amfani da su a cikin rumbun bayanai, da layukan rumbun bayanai waɗanda fayilolinsu suka ɓace. Duk abin da ake amfani da shi a lokacin da ake share shi za a ajiye shi. Rubuta adadin marayu don ci gaba:",
+  "gitea-orphans-delete-wrong-number": "Lambar da aka rubuta ba adadin marayu ba ce. Ba a share komai ba."
 }

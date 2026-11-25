@@ -279,6 +279,7 @@
   "desktop-mode": "桌面模式",
   "mobile-mode": "移动模式",
   "mobile-desktop-toggle": "勒移动模式搭桌面模式之间切换",
+  "html4-html5-toggle": "勒 HTML4 视图搭 HTML5 视图之间切换",
   "zoom-in": "放大",
   "zoom-out": "缩小",
   "zoom-level": "缩放级别",
@@ -850,6 +851,7 @@
   "export": "导出",
   "export-board": "导出看板",
   "export-board-without-attachments": "勿含附件",
+  "export-board-without-archive": "勿含已归档项目",
   "export-ical-feed": "日历订阅（iCal）",
   "user-can-not-export-excel": "用户勿能导出 Excel",
   "export-card": "导出卡片",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "删除于",
   "gitea-freed": "腾出",
   "gitea-deleted-list": "删除个仓库",
-  "gitea-index-stale": "删除以后已经过时：再量一趟得到准确个大小。"
+  "gitea-index-stale": "删除以后已经过时：再量一趟得到准确个大小。",
+  "gitea-db-migration-version": "Gitea 数据库迁移版本",
+  "gitea-orphans-delete": "删除所有孤儿",
+  "gitea-orphans-delete-confirm": "搿个操作会拿数据库里啥也勿用个孤儿文件，搭文件已经呒没个数据库行，从 Gitea 文件夹里永久删除。删个辰光还勒用个物事侪会保留。打孤儿个数目继续：",
+  "gitea-orphans-delete-wrong-number": "打个数字勿是孤儿个数目。啥也呒没删。"
 }

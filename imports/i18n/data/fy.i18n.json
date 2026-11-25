@@ -279,6 +279,7 @@
   "desktop-mode": "Buroblêdmodus",
   "mobile-mode": "Mobile modus",
   "mobile-desktop-toggle": "Skeakelje tusken Mobile en Desktop Mode",
+  "html4-html5-toggle": "Skeakelje tusken HTML4- en HTML5-werjefte",
   "zoom-in": "Zoom yn",
   "zoom-out": "Zoom út",
   "zoom-level": "Zoom nivo",
@@ -850,6 +851,7 @@
   "export": "Eksportearje",
   "export-board": "Eksportearje board",
   "export-board-without-attachments": "sûnder taheaksels",
+  "export-board-without-archive": "sûnder argivearre items",
   "export-ical-feed": "Kalinder (iCal)",
   "user-can-not-export-excel": "Brûker kin Excel net eksportearje",
   "export-card": "Eksportearje card",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Wiske",
   "gitea-freed": "frijmakke",
   "gitea-deleted-list": "Wiske repositories",
-  "gitea-index-stale": "Ferâldere sûnt in wisking: mjit opnij foar krekte grutte."
+  "gitea-index-stale": "Ferâldere sûnt in wisking: mjit opnij foar krekte grutte.",
+  "gitea-db-migration-version": "Migraasjeferzje fan de Gitea-databank",
+  "gitea-orphans-delete": "Alle wezen wiskje",
+  "gitea-orphans-delete-confirm": "Dit wisket foargoed út de Gitea-map de wezebestannen dy't neat yn de databank brûkt, en de rigels yn de databank wêrfan't it bestân fuort is. Alles wat yn gebrûk is as it wiske wurdt, wurdt bewarre. Typ it oantal wezen om troch te gean:",
+  "gitea-orphans-delete-wrong-number": "It typte getal is net it oantal wezen. Der is neat wiske."
 }

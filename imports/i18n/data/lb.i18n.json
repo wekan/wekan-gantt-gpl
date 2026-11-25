@@ -279,6 +279,7 @@
   "desktop-mode": "Desktop-Modus",
   "mobile-mode": "Mobil-Modus",
   "mobile-desktop-toggle": "Wechseln zwischen Mobil un Desktop Modus",
+  "html4-html5-toggle": "Wiessel tëscht der HTML4- an der HTML5-Usiicht",
   "zoom-in": "Vergréisseren",
   "zoom-out": "Verklengeren",
   "zoom-level": "Zoom-Stuf",
@@ -850,6 +851,7 @@
   "export": "Exportéieren",
   "export-board": "Tafel exportéieren",
   "export-board-without-attachments": "ouni Uschlëss",
+  "export-board-without-archive": "ouni archivéiert Elementer",
   "export-ical-feed": "Kalennerfeed (iCal)",
   "user-can-not-export-excel": "De Benotzer kann net op Excel exportéieren",
   "export-card": "Kaart exportéieren",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Geläscht",
   "gitea-freed": "fräi gemaach",
   "gitea-deleted-list": "Geläschte Repositoryen",
-  "gitea-index-stale": "Net méi aktuell zënter enger Läschung: nach eng Kéier moosse fir exakt Gréissten."
+  "gitea-index-stale": "Net méi aktuell zënter enger Läschung: nach eng Kéier moosse fir exakt Gréissten.",
+  "gitea-db-migration-version": "Migratiounsversioun vun der Gitea-Datebank",
+  "gitea-orphans-delete": "All Weesen läschen",
+  "gitea-orphans-delete-confirm": "Dëst läscht definitiv aus dem Gitea-Dossier déi verweest Fichieren, déi näischt an der Datebank benotzt, an d'Reien an der Datebank, deenen hire Fichier fort ass. Alles, wat beim Läschen am Gebrauch ass, bleift erhalen. Gitt d'Zuel vun de Weesen an, fir weiderzemaachen:",
+  "gitea-orphans-delete-wrong-number": "Déi aginnen Zuel ass net d'Zuel vun de Weesen. Näischt gouf geläscht."
 }

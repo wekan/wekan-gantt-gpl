@@ -279,6 +279,7 @@
   "desktop-mode": "מצב שולחן עבודה",
   "mobile-mode": "מצב נייד",
   "mobile-desktop-toggle": "החלפה בין מצב לניידים לבין מצב לשולחן עבודה",
+  "html4-html5-toggle": "החלפה בין תצוגת HTML4 לבין תצוגת HTML5",
   "zoom-in": "התקרבות",
   "zoom-out": "התרחקות",
   "zoom-level": "מרחק מתצוגה",
@@ -850,6 +851,7 @@
   "export": "ייצוא",
   "export-board": "ייצוא לוח",
   "export-board-without-attachments": "ללא צרופות",
+  "export-board-without-archive": "ללא פריטים בארכיון",
   "export-ical-feed": "לוח שנה (iCal)",
   "user-can-not-export-excel": "המשתמש לא יכול לייצא ל־Excel",
   "export-card": "ייצוא כרטיס",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "נמחק ב־",
   "gitea-freed": "שוחררו",
   "gitea-deleted-list": "מאגרים שנמחקו",
-  "gitea-index-stale": "לא עדכני מאז מחיקה: יש למדוד שוב לקבלת גדלים מדויקים."
+  "gitea-index-stale": "לא עדכני מאז מחיקה: יש למדוד שוב לקבלת גדלים מדויקים.",
+  "gitea-db-migration-version": "גרסת ההגירה של מסד הנתונים של Gitea",
+  "gitea-orphans-delete": "למחוק את כל היתומים",
+  "gitea-orphans-delete-confirm": "פעולה זו מוחקת לצמיתות מתיקיית Gitea את קובצי היתומים ששום דבר במסד הנתונים אינו משתמש בהם, ואת השורות במסד הנתונים שהקובץ שלהן חסר. כל מה שנמצא בשימוש בעת המחיקה נשמר. יש להקליד את מספר היתומים כדי להמשיך:",
+  "gitea-orphans-delete-wrong-number": "המספר שהוקלד אינו מספר היתומים. דבר לא נמחק."
 }

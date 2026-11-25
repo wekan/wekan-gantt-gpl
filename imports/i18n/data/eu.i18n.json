@@ -279,6 +279,7 @@
   "desktop-mode": "Mahaigain modua",
   "mobile-mode": "Mugikor modua",
   "mobile-desktop-toggle": "Aldatu Mugikor eta Mahaigain moduen artean",
+  "html4-html5-toggle": "Aldatu HTML4 eta HTML5 ikuspegien artean",
   "zoom-in": "Handiagotu",
   "zoom-out": "Txikiagotu",
   "zoom-level": "Zoom maila",
@@ -850,6 +851,7 @@
   "export": "Esportatu",
   "export-board": "Esportatu arbela",
   "export-board-without-attachments": "eranskinik gabe",
+  "export-board-without-archive": "gordetako elementurik gabe",
   "export-ical-feed": "Egutegia (iCal)",
   "user-can-not-export-excel": "Erabiltzaileak ezin du esportatu Excel gisa",
   "export-card": "Esportatu txartela",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Ezabatua",
   "gitea-freed": "askatuta",
   "gitea-deleted-list": "Ezabatutako biltegiak",
-  "gitea-index-stale": "Zaharkituta ezabaketa batetik: neurtu berriro tamaina zehatzetarako."
+  "gitea-index-stale": "Zaharkituta ezabaketa batetik: neurtu berriro tamaina zehatzetarako.",
+  "gitea-db-migration-version": "Gitea datu-basearen migrazio-bertsioa",
+  "gitea-orphans-delete": "Ezabatu umezurtz guztiak",
+  "gitea-orphans-delete-confirm": "Honek betiko ezabatzen ditu Gitea karpetatik datu-baseko ezerk erabiltzen ez dituen fitxategi umezurtzak eta fitxategia galdu duten datu-baseko errenkadak. Ezabatzeko unean erabiltzen ari den guztia gordetzen da. Idatzi umezurtz kopurua jarraitzeko:",
+  "gitea-orphans-delete-wrong-number": "Idatzitako zenbakia ez da umezurtz kopurua. Ez da ezer ezabatu."
 }

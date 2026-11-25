@@ -279,6 +279,7 @@
   "desktop-mode": "Desktop-Modus",
   "mobile-mode": "Handy-Modus",
   "mobile-desktop-toggle": "Umschalten zwischen Mobil und Desktop Ansicht",
+  "html4-html5-toggle": "Umschalten zwischen HTML4 und HTML5 Ansicht",
   "zoom-in": "Vergrößern",
   "zoom-out": "Verkleinern",
   "zoom-level": "Zoomstufe",
@@ -850,6 +851,7 @@
   "export": "Exportieren",
   "export-board": "Board exportieren",
   "export-board-without-attachments": "ohne Anhänge",
+  "export-board-without-archive": "ohne archivierte Elemente",
   "export-ical-feed": "Kalender (iCal)",
   "user-can-not-export-excel": "Benutzer kann nicht nach Excel exportieren",
   "export-card": "Karte exportieren",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Gelöscht",
   "gitea-freed": "freigegeben",
   "gitea-deleted-list": "Gelöschte Repositorys",
-  "gitea-index-stale": "Veraltet seit einer Löschung: erneut messen für genaue Größen."
+  "gitea-index-stale": "Veraltet seit einer Löschung: erneut messen für genaue Größen.",
+  "gitea-db-migration-version": "Migrationsversion der Gitea-Datenbank",
+  "gitea-orphans-delete": "Alle Waisen löschen",
+  "gitea-orphans-delete-confirm": "Dies löscht endgültig aus dem Gitea-Ordner die verwaisten Dateien, die nichts in der Datenbank verwendet, und die Datenbankzeilen, deren Datei fehlt. Alles, was beim Löschen in Gebrauch ist, bleibt erhalten. Geben Sie zum Fortfahren die Anzahl der Waisen ein:",
+  "gitea-orphans-delete-wrong-number": "Die eingegebene Zahl ist nicht die Anzahl der Waisen. Es wurde nichts gelöscht."
 }

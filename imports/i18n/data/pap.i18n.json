@@ -279,6 +279,7 @@
   "desktop-mode": "Modo di Escritorio",
   "mobile-mode": "Modo Móbil",
   "mobile-desktop-toggle": "Alterna entre e Modo Móbil i e Modo di Escritorio",
+  "html4-html5-toggle": "Alterna entre e Vista HTML4 i e Vista HTML5",
   "zoom-in": "Asercar",
   "zoom-out": "Alehar",
   "zoom-level": "Nibel di zoom",
@@ -850,6 +851,7 @@
   "export": "Eksportá",
   "export-board": "Exportá e tabla",
   "export-board-without-attachments": "sin adhuntos",
+  "export-board-without-archive": "sin elementonan archivá",
   "export-ical-feed": "Calendario (iCal)",
   "user-can-not-export-excel": "E usuario no por exportar Exsel",
   "export-card": "Exportar e karchi",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Eliminá",
   "gitea-freed": "librá",
   "gitea-deleted-list": "Repositorionan eliminá",
-  "gitea-index-stale": "No ta al dia mas desde un eliminashon: midi atrobe pa tamañonan eksakto."
+  "gitea-index-stale": "No ta al dia mas desde un eliminashon: midi atrobe pa tamañonan eksakto.",
+  "gitea-db-migration-version": "Version di migrashon di e base di dato di Gitea",
+  "gitea-orphans-delete": "Kita tur wérfano",
+  "gitea-orphans-delete-confirm": "Esaki ta eliminá pa semper for di e map di Gitea e archivonan wérfano ku nada den e base di dato no ta usa, i e filanan di e base di dato ku nan archivo a disparsé. Tur kos ku ta na uso ora e ta wòrdu eliminá ta keda. Tek e kantidat di wérfano pa sigui:",
+  "gitea-orphans-delete-wrong-number": "E número tekiá no ta e kantidat di wérfano. Nada no a wòrdu eliminá."
 }

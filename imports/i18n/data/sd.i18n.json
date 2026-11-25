@@ -279,6 +279,7 @@
   "desktop-mode": "ڊيسڪ ٽاپ موڊ",
   "mobile-mode": "موبائل موڊ",
   "mobile-desktop-toggle": "موبائل ۽ ڊيسڪ ٽاپ موڊ مٽايو",
+  "html4-html5-toggle": "HTML4 ۽ HTML5 منظر مٽايو",
   "zoom-in": "وڏو ڪريو",
   "zoom-out": "ننڍو ڪريو",
   "zoom-level": "وڏائيءَ جي سطح",
@@ -850,6 +851,7 @@
   "export": "برآمد ڪريو",
   "export-board": "بورڊ برآمد ڪريو",
   "export-board-without-attachments": "منسلڪن کان سواءِ",
+  "export-board-without-archive": "آرڪائيو ٿيل شين کان سواءِ",
   "export-ical-feed": "ڪئلينڊر (iCal)",
   "user-can-not-export-excel": "استعمال ڪندڙ Excel ۾ برآمد نٿو ڪري سگهي",
   "export-card": "ڪارڊ برآمد ڪريو",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "ڊاٺل",
   "gitea-freed": "آزاد ٿيو",
   "gitea-deleted-list": "ڊاٺل ريپوزيٽريون",
-  "gitea-index-stale": "هڪ ڊاهڻ کان پوءِ پراڻو: صحيح سائيزن لاءِ ٻيهر ماپيو."
+  "gitea-index-stale": "هڪ ڊاهڻ کان پوءِ پراڻو: صحيح سائيزن لاءِ ٻيهر ماپيو.",
+  "gitea-db-migration-version": "Gitea ڊيٽابيس جي لڏپلاڻ جو نسخو",
+  "gitea-orphans-delete": "سڀ يتيم ڊاهيو",
+  "gitea-orphans-delete-confirm": "هي Gitea فولڊر مان هميشه لاءِ اهي يتيم فائلون ڊاهي ٿو جن کي ڊيٽابيس ۾ ڪجهه به استعمال نٿو ڪري، ۽ ڊيٽابيس جون اهي قطارون جن جي فائل گم آهي. ڊاهڻ وقت جيڪو به استعمال ۾ هجي، اهو رکيو وڃي ٿو. اڳتي وڌڻ لاءِ يتيمن جو تعداد ٽائيپ ڪريو:",
+  "gitea-orphans-delete-wrong-number": "ٽائيپ ڪيل انگ يتيمن جو تعداد ناهي. ڪجهه به ڊاٺو نه ويو."
 }

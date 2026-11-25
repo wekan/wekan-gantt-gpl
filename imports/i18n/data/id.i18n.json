@@ -279,6 +279,7 @@
   "desktop-mode": "Mode Desktop",
   "mobile-mode": "Mode Seluler",
   "mobile-desktop-toggle": "Beralih antara mode seluler dan desktop",
+  "html4-html5-toggle": "Beralih antara tampilan HTML4 dan HTML5",
   "zoom-in": "Perbesar",
   "zoom-out": "Perkecil",
   "zoom-level": "Tingkat pembesaran",
@@ -850,6 +851,7 @@
   "export": "Ekspor",
   "export-board": "Ekspor Papan",
   "export-board-without-attachments": "tanpa lampiran",
+  "export-board-without-archive": "tanpa item yang diarsipkan",
   "export-ical-feed": "Kalender (iCal)",
   "user-can-not-export-excel": "Pengguna tidak dapat mengekspor Excel",
   "export-card": "Ekspor kartu",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Dihapus",
   "gitea-freed": "dibebaskan",
   "gitea-deleted-list": "Repositori yang dihapus",
-  "gitea-index-stale": "Kedaluwarsa sejak penghapusan: ukur lagi untuk ukuran yang tepat."
+  "gitea-index-stale": "Kedaluwarsa sejak penghapusan: ukur lagi untuk ukuran yang tepat.",
+  "gitea-db-migration-version": "Versi migrasi basis data Gitea",
+  "gitea-orphans-delete": "Hapus semua yatim",
+  "gitea-orphans-delete-confirm": "Ini menghapus untuk selamanya dari folder Gitea berkas yatim yang tidak dipakai apa pun di basis data, dan baris basis data yang berkasnya sudah hilang. Apa pun yang sedang dipakai saat dihapus tetap disimpan. Ketik jumlah yatim untuk melanjutkan:",
+  "gitea-orphans-delete-wrong-number": "Angka yang diketik bukan jumlah yatim. Tidak ada yang dihapus."
 }

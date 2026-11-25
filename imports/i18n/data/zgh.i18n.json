@@ -279,6 +279,7 @@
   "desktop-mode": "ⵜⴰⵍⵖⴰ Desktop",
   "mobile-mode": "ⵜⴰⵍⵖⴰ Mobile",
   "mobile-desktop-toggle": "ⵙⵏⴼⵍ ⴳⵔ ⵜⴰⵍⵖⴰ Mobile ⴷ ⵜⴰⵍⵖⴰ Desktop",
+  "html4-html5-toggle": "ⵙⵏⴼⵍ ⴳⵔ ⵜⴰⵎⵓⴳⵍⵉ HTML4 ⴷ ⵜⴰⵎⵓⴳⵍⵉ HTML5",
   "zoom-in": "Zoom ⵖⵔ ⵣⴷⴰⵜ",
   "zoom-out": "Zoom ⵖⵔ ⴷⴼⴼⵉⵔ",
   "zoom-level": "ⴰⵙⵡⵉⵔ ⵏ Zoom",
@@ -850,6 +851,7 @@
   "export": "ⵙⵙⵓⴼⵖ",
   "export-board": "ⵙⵙⵓⴼⵖ ⵜⴰⴼⵍⵡⵉⵜ",
   "export-board-without-attachments": "ⵡⴰⵔ ⵜⵉⵎⴻⵔⵔⴰⵢⵉⵏ",
+  "export-board-without-archive": "ⵡⴰⵔ ⵉⴼⵔⴷⵉⵙⵏ ⴳ ⵓⵔⵛⵉⴼ",
   "export-ical-feed": "ⴰⵙⵙⴰⵖ ⵏ ⵓⵙⵎⵍⵓⵙⵙⴰⵏ (iCal)",
   "user-can-not-export-excel": "ⴰⵏⵙⵙⵎⵔⵙ ⵓⵔ ⵉⵥⴹⴰⵕ ⴰ ⵉⵙⵙⵓⴼⵖ ⵖⵔ Excel",
   "export-card": "ⵙⵙⵓⴼⵖ ⵜⴰⴽⴰⵕⴹⴰ",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "ⵉⵜⵜⵡⴰⴽⴽⵙ",
   "gitea-freed": "ⵉⵜⵜⵓⵙⵍⵍⵓⵍⵍⵓ",
   "gitea-deleted-list": "ⵉⴽⵓⴼⴰ ⵉⵜⵜⵡⴰⴽⴽⵙⵏ",
-  "gitea-index-stale": "ⵓⵔ ⵉⵎⵢⴰⵡⴰⵏ ⵙⴳ ⵢⴰⵏ ⵓⴽⴽⵙ: ⵙⵉⴹⵏ ⴷⴰⵖ ⵉ ⵜⵉⴷⴷⵉⵡⵉⵏ ⵉⵖⵓⴷⴰⵏ."
+  "gitea-index-stale": "ⵓⵔ ⵉⵎⵢⴰⵡⴰⵏ ⵙⴳ ⵢⴰⵏ ⵓⴽⴽⵙ: ⵙⵉⴹⵏ ⴷⴰⵖ ⵉ ⵜⵉⴷⴷⵉⵡⵉⵏ ⵉⵖⵓⴷⴰⵏ.",
+  "gitea-db-migration-version": "ⵜⵓⵏⵖⵉⵍⵜ ⵏ ⵓⵙⵎⵓⵜⵜⵢ ⵏ ⵜⵙⵉⵍⴰ ⵏ ⵉⵙⴼⴽⴰ ⵏ Gitea",
+  "gitea-orphans-delete": "ⴽⴽⵙ ⵉⴳⵓⵊⵉⵍⵏ ⵎⴰⵕⵕⴰ",
+  "gitea-orphans-delete-confirm": "ⴰⵢⴰ ⴰⴷ ⵉⴽⴽⵙ ⵉ ⵍⴱⴷⴰ ⵙⴳ ⵓⴽⴰⵔⴰⵎ ⵏ Gitea ⵉⴼⴰⵢⵍⵓⵜⵏ ⵉⴳⵓⵊⵉⵍⵏ ⵍⵍⵉ ⵓⵔ ⵉⵙⵙⵎⵔⴰⵙ ⵢⴰⵜ ⴳ ⵜⵙⵉⵍⴰ ⵏ ⵉⵙⴼⴽⴰ, ⴷ ⵉⵣⵔⵉⴳⵏ ⵏ ⵜⵙⵉⵍⴰ ⵏ ⵉⵙⴼⴽⴰ ⵍⵍⵉ ⵉⵔⵡⵍ ⵓⴼⴰⵢⵍⵓ ⵏⵏⵙⵏ. ⴽⵔⴰ ⵉⵜⵜⵓⵙⵙⵎⵔⴰⵙⵏ ⴳ ⵓⵣⵎⵣ ⵏ ⵓⴽⴽⵙ ⴰⴷ ⵉⵇⵇⵉⵎ. ⴰⵔⵓ ⵓⵟⵟⵓⵏ ⵏ ⵉⴳⵓⵊⵉⵍⵏ ⴰⴷ ⵜⴽⵎⵎⵍⵜ:",
+  "gitea-orphans-delete-wrong-number": "ⵓⵟⵟⵓⵏ ⵍⵍⵉ ⵜⵓⵔⵉⴷ ⵓⵔ ⵉⴳⵉ ⵓⵟⵟⵓⵏ ⵏ ⵉⴳⵓⵊⵉⵍⵏ. ⵓⵔ ⵉⵜⵜⵡⴰⴽⴽⵙ ⵢⴰⵜ."
 }

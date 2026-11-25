@@ -279,6 +279,7 @@
   "desktop-mode": "Qarasaasiami ilusaa",
   "mobile-mode": "Mobilimi ilusaa",
   "mobile-desktop-toggle": "Mobilimi qarasaasiamilu ilusaat akornanni paarlaagit",
+  "html4-html5-toggle": "HTML4-mi HTML5-milu takussutissat akornanni paarlaagit",
   "zoom-in": "Angillisiguk",
   "zoom-out": "Mikillisiguk",
   "zoom-level": "Angissusip qaffasissusaa",
@@ -850,6 +851,7 @@
   "export": "Nuussuk",
   "export-board": "Ilisarnaat anisikkit",
   "export-board-without-attachments": "ilanngussaqanngitsumik",
+  "export-board-without-archive": "toqqorsimasunik ilaqanngitsumik",
   "export-ical-feed": "Ullorsiut (iCal)",
   "user-can-not-export-excel": "Atuisoq Excelimut annissisinnaanngilaq",
   "export-card": "Kortsi anniguk",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Peerneqarpoq",
   "gitea-freed": "qaangiisinneqarpoq",
   "gitea-deleted-list": "Kode-toqqorsiviit peerneqartut",
-  "gitea-index-stale": "Peersinerup kingorna nutaajunnaarpoq: angissusii eqqortut pillugit uuttoqqiguk."
+  "gitea-index-stale": "Peersinerup kingorna nutaajunnaarpoq: angissusii eqqortut pillugit uuttoqqiguk.",
+  "gitea-db-migration-version": "Gitea-p paasissutissanik toqqorsiviata nuutsinerata normua",
+  "gitea-orphans-delete": "Angajoqqaaqanngitsut tamaasa piikkit",
+  "gitea-orphans-delete-confirm": "Una Gitea-mi mappimit isumaannaartumik peersisarpoq angajoqqaaqanngitsunik filinik paasissutissanik toqqorsivimmi sumilluunniit atorneqanngitsunik, paasissutissanillu toqqorsivimmi titarnernik filiat annaasimasunik. Peersinermi atorneqartoq tamarmi toqqorneqassaaq. Ingerlaqqinniarlutit angajoqqaaqanngitsut amerlassusaat allaguk:",
+  "gitea-orphans-delete-wrong-number": "Kisitsit allanneqartoq angajoqqaaqanngitsut amerlassusaanngilaq. Sunik peersisoqanngilaq."
 }

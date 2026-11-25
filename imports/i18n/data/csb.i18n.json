@@ -279,6 +279,7 @@
   "desktop-mode": "Tryb komputerowi",
   "mobile-mode": "Mobilny trib",
   "mobile-desktop-toggle": "Przełączë midzë mobilnym a kòmpùtrowim tribã",
+  "html4-html5-toggle": "Przełączë midzë widokã HTML4 a HTML5",
   "zoom-in": "Pòwiãkszë",
   "zoom-out": "Zmniészë",
   "zoom-level": "Rówień zwikszeniô",
@@ -850,6 +851,7 @@
   "export": "Ekspòrtowac",
   "export-board": "Ekspòrtowac tôflã",
   "export-board-without-attachments": "bez załącznikòw",
+  "export-board-without-archive": "bez zarchiwizowónëch elementów",
   "export-ical-feed": "Kanał kalãdôrza (iCal)",
   "user-can-not-export-excel": "Brëkòwnik nie mòże ekspòrtowac do Excel",
   "export-card": "Ekspòrtëjë kôrtã",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Rëmniãté",
   "gitea-freed": "wëzwòloné",
   "gitea-deleted-list": "Rëmniãté repòzytoria",
-  "gitea-index-stale": "Stôré òd rëmniãcô: zmierzë znowa dlô dokładnëch miarów."
+  "gitea-index-stale": "Stôré òd rëmniãcô: zmierzë znowa dlô dokładnëch miarów.",
+  "gitea-db-migration-version": "Wersjô migracji bazë dónëch Gitea",
+  "gitea-orphans-delete": "Rëmôj wszëtczé sërotë",
+  "gitea-orphans-delete-confirm": "To na wiedno rëmô z katalogù Gitea sërotné lopczi, chtërnëch nic w bazie dónëch nie brëkùje, i réżi bazë dónëch, chtërnëch lopka ju nie je. Wszëtkò, co je w ùżëcym, czedë je rëmóné, òstaje. Wpiszë lëczbã sërotów, żebë jic dali:",
+  "gitea-orphans-delete-wrong-number": "Wpisónô lëczba nie je lëczbą sërotów. Nic nie òstało rëmniãté."
 }

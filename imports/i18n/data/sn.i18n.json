@@ -279,6 +279,7 @@
   "desktop-mode": "Maitiro epakombiyuta",
   "mobile-mode": "Maitiro epanharembozha",
   "mobile-desktop-toggle": "Chinjana pakati peMobile neDesktop",
+  "html4-html5-toggle": "Chinjana pakati pekuratidza kweHTML4 neHTML5",
   "zoom-in": "Swedera pedyo",
   "zoom-out": "Deredza kukura",
   "zoom-level": "Mwero wekukudza",
@@ -850,6 +851,7 @@
   "export": "Buritsa",
   "export-board": "Buritsa bhodhi",
   "export-board-without-attachments": "pasina zvinamatidzwa",
+  "export-board-without-archive": "pasina zvinhu zvakachengetwa",
   "export-ical-feed": "Mutsara wezviitiko zvekarenda (iCal)",
   "user-can-not-export-excel": "Mushandisi haagoni kubuditsa Excel",
   "export-card": "Buritsa kadhi",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Yakadzimwa",
   "gitea-freed": "zvasunungurwa",
   "gitea-deleted-list": "Marepository akadzimwa",
-  "gitea-index-stale": "Hazvisi zvazvino kubva pakudzima: yera zvakare kuti uwane masaizi chaiwo."
+  "gitea-index-stale": "Hazvisi zvazvino kubva pakudzima: yera zvakare kuti uwane masaizi chaiwo.",
+  "gitea-db-migration-version": "Shanduro yekutamisa dhatabhesi yeGitea",
+  "gitea-orphans-delete": "Dzima nherera dzose",
+  "gitea-orphans-delete-confirm": "Izvi zvinodzima zvachose kubva mufodha yeGitea mafaira enherera asingashandiswe nechinhu chipi zvacho mudhatabhesi, nemitsara yedhatabhesi yakarasikirwa nefaira rayo. Chero chinhu chiri kushandiswa pachinodzimwa chinochengetwa. Nyora huwandu hwenherera kuti uenderere:",
+  "gitea-orphans-delete-wrong-number": "Nhamba yakanyorwa haisi huwandu hwenherera. Hapana chakadzimwa."
 }

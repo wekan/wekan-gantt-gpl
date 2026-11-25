@@ -279,6 +279,7 @@
   "desktop-mode": "Mod ela Desktop",
   "mobile-mode": "Mod pro telefon polovik",
   "mobile-desktop-toggle": "Votükön bevü mod pro telefon polovik e mod ela Desktop",
+  "html4-html5-toggle": "Votükön bevü logam HTML4 e logam HTML5",
   "zoom-in": "Gretükön",
   "zoom-out": "Smalükön",
   "zoom-level": "Gretükamagrad",
@@ -850,6 +851,7 @@
   "export": "Ekavön",
   "export-board": "Seveigön tabi",
   "export-board-without-attachments": "nen keblünots",
+  "export-board-without-archive": "nen dins in ragiv",
   "export-ical-feed": "Kalendri inkavön (iCal)",
   "user-can-not-export-excel": "Geban no kanon seveigön lü Excel",
   "export-card": "Kadi seveigön",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Pemoükon",
   "gitea-freed": "pelivükon",
   "gitea-deleted-list": "Dakipöps pemoüköl",
-  "gitea-index-stale": "No plu nulik sis moükam: mafön dönu ad gretots kuratik."
+  "gitea-index-stale": "No plu nulik sis moükam: mafön dönu ad gretots kuratik.",
+  "gitea-db-migration-version": "Fomam tevoda nünodema Gitea",
+  "gitea-orphans-delete": "Moükön pälöfanis valik",
+  "gitea-orphans-delete-confirm": "Atos moükon ai se dosiär de Gitea ragivodis pälöfik, kelis nos in nünodem no gebon, e kedis nünodema, kelas ragiv peron. Valikos, kel pagebon ven pamoükon, pakipon. Penolös numi pälöfanas ad fovön:",
+  "gitea-orphans-delete-wrong-number": "Num pepenöl no binon num pälöfanas. Nos pemoükon."
 }

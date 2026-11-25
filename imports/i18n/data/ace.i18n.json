@@ -279,6 +279,7 @@
   "desktop-mode": "Mod Desktop",
   "mobile-mode": "Mod HP",
   "mobile-desktop-toggle": "Tuka antara mode Mobile ngon Desktop",
+  "html4-html5-toggle": "Tuka antara tampilan HTML4 ngon HTML5",
   "zoom-in": "Zum tamong",
   "zoom-out": "Zum teubiet",
   "zoom-level": "Tingkat zum",
@@ -850,6 +851,7 @@
   "export": "Eksport",
   "export-board": "Ekspor papan",
   "export-board-without-attachments": "hana lampiran",
+  "export-board-without-archive": "hana item nyang geuarsip",
   "export-ical-feed": "Feed kalender (iCal)",
   "user-can-not-export-excel": "Ureueng ngui hana jeuet ekspor Excel",
   "export-card": "Ekspor kad",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Geusampôh",
   "gitea-freed": "geupeulheuh",
   "gitea-deleted-list": "Repositori nyang ka geusampôh",
-  "gitea-index-stale": "Ka basi sit'ép na peunyampôh: kira lom untuk rayeuk nyang pasti."
+  "gitea-index-stale": "Ka basi sit'ép na peunyampôh: kira lom untuk rayeuk nyang pasti.",
+  "gitea-db-migration-version": "Versi migrasi basis data Gitea",
+  "gitea-orphans-delete": "Sampôh mandum yatim",
+  "gitea-orphans-delete-confirm": "Nyoe geusampôh keu sabé nibak folder Gitea, berkah yatim nyang hana sapeue lam basis data pakek, ngon baréh basis data nyang berkah jih ka gadoh. Peue nyang teungoh geupakek watèe geusampôh, tetap geupeutinggai. Tuléh jumlah yatim untuk lanjut:",
+  "gitea-orphans-delete-wrong-number": "Angka nyang geutuléh kon jumlah yatim. Hana sapeue nyang geusampôh."
 }

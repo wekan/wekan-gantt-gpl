@@ -279,6 +279,7 @@
   "desktop-mode": "Fomba solosaina",
   "mobile-mode": "Fomba finday",
   "mobile-desktop-toggle": "Mifamadika eo amin'ny fomba finday sy solosaina",
+  "html4-html5-toggle": "Mifamadika eo amin'ny fijery HTML4 sy HTML5",
   "zoom-in": "Zahao akaiky",
   "zoom-out": "Zahao lavitra",
   "zoom-level": "Haavon'ny fanalehibeazana",
@@ -850,6 +851,7 @@
   "export": "Hamoaka",
   "export-board": "Hamoaka ny solaitra",
   "export-board-without-attachments": "tsy misy rakitra miaraka",
+  "export-board-without-archive": "tsy misy zavatra voatahiry",
   "export-ical-feed": "Kalandrie (iCal)",
   "user-can-not-export-excel": "Tsy afaka manondrana Excel ny mpampiasa",
   "export-card": "Manondrana karatra",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Voafafa",
   "gitea-freed": "nafahana",
   "gitea-deleted-list": "Tahiry voafafa",
-  "gitea-index-stale": "Efa tsy vaovao hatramin'ny famafana iray: refeso indray ho an'ny habe marina."
+  "gitea-index-stale": "Efa tsy vaovao hatramin'ny famafana iray: refeso indray ho an'ny habe marina.",
+  "gitea-db-migration-version": "Dikan'ny fifindran'ny tahiry angona Gitea",
+  "gitea-orphans-delete": "Fafao ny kamboty rehetra",
+  "gitea-orphans-delete-confirm": "Mamafa mandrakizay avy ao amin'ny lahatahiry Gitea ny rakitra kamboty tsy ampiasain'ny zavatra na inona na inona ao amin'ny tahiry angona izany, sy ireo andalana ao amin'ny tahiry angona very ny rakitrany. Tehirizina izay rehetra ampiasaina amin'ny fotoana famafana azy. Soraty ny isan'ny kamboty raha hanohy:",
+  "gitea-orphans-delete-wrong-number": "Tsy isan'ny kamboty ny isa nosoratana. Tsy nisy voafafa."
 }

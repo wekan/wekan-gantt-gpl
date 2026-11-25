@@ -279,6 +279,7 @@
   "desktop-mode": "Mod Desktop",
   "mobile-mode": "Mod Mudah Alih",
   "mobile-desktop-toggle": "Tukar antara mod mudah alih dan desktop",
+  "html4-html5-toggle": "Tukar antara paparan HTML4 dan HTML5",
   "zoom-in": "Zum masuk",
   "zoom-out": "Zum keluar",
   "zoom-level": "Aras zum",
@@ -850,6 +851,7 @@
   "export": "Eksport",
   "export-board": "Ekport Papan",
   "export-board-without-attachments": "tanpa lampiran",
+  "export-board-without-archive": "tanpa item yang diarkibkan",
   "export-ical-feed": "Kalendar (iCal)",
   "user-can-not-export-excel": "Pengguna tidak boleh eksport Exce",
   "export-card": "Eksport Kad",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Dipadam",
   "gitea-freed": "dibebaskan",
   "gitea-deleted-list": "Repositori yang dipadam",
-  "gitea-index-stale": "Lapuk sejak pemadaman: ukur semula untuk saiz yang tepat."
+  "gitea-index-stale": "Lapuk sejak pemadaman: ukur semula untuk saiz yang tepat.",
+  "gitea-db-migration-version": "Versi migrasi pangkalan data Gitea",
+  "gitea-orphans-delete": "Padam semua yatim",
+  "gitea-orphans-delete-confirm": "Ini memadam buat selama-lamanya daripada folder Gitea fail yatim yang tidak digunakan oleh apa-apa dalam pangkalan data, dan baris pangkalan data yang failnya telah hilang. Apa-apa yang sedang digunakan ketika dipadam akan dikekalkan. Taip bilangan yatim untuk meneruskan:",
+  "gitea-orphans-delete-wrong-number": "Nombor yang ditaip bukan bilangan yatim. Tiada apa-apa dipadam."
 }

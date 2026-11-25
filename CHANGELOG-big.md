@@ -96,6 +96,126 @@ Which databases WeKan supports
 
 </details>
 
+# v13.33 2026-11-26 WeKan ® release
+
+**In short:** The Docker entrypoint logs **no value read from the environment**
+(two GitHub CodeQL alerts). A **board export without archived items** moves a
+board to another WeKan without its archive, the **UCS App Center** publisher
+works with the distroless FerretDB image again, and **Walloon** is Walloon
+instead of French and invented words. Omi gets its Gitea orphan strings in every
+language, and the Azure Blob test no longer hangs.
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/254adfd57704330770de5c6defbb6c973ef680e7">The Docker entrypoint logs no value read from the environment, and db-ready no credentials</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+CodeQL alerts #617 and #618 (`js/clear-text-logging`, high): the entrypoint
+printed the port in its "waiting for database" line and the `MONGO_URL_FILE`
+path in its error. The same query run locally found two more behind them, the
+FerretDB listen address and the `WEKAN_DB` value repeated in its error. Each is
+now a fixed sentence that names the variable, not its value, and the query
+finds nothing left in `releases/ferretdb/`. And one CodeQL cannot see: the
+database probe's reason is also shown on the public "waiting for database" page,
+and one driver message names the username of a malformed `MONGO_URL`, so the
+URL's username and password are taken out of every message first. There is no
+attempt to record in Admin Panel / Problems: this changes what a log line says.
+`tests/dockerEntrypoint.test.cjs` runs the probe for real.
+
+</details>
+
+and adds the following new features:
+
+**Board export** - what the export of a board carries.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/3f0647e2d8b962b6974b7b95c75d53c62fa99b83">JSON without archived items, for moving a board to another WeKan</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+A board export is a complete copy, archive included, so a board moved to
+another WeKan brought years of archived cards, lists and swimlanes that had to
+be emptied by hand ([#6946](https://github.com/wekan/wekan/issues/6946)). The
+export popup now has **JSON (without archived items)**, `?archived=false` at
+the JSON and `.zip` export routes. It leaves out the archived cards, lists and
+swimlanes, the cards on an archived list or swimlane, and their comments,
+checklists and attachments - the reporter's patch left an archived card's
+attachment files in the export, because attachments are read by the board,
+not by the cards. An ordinary export is still a complete backup.
+`tests/exportExcludeArchived.test.cjs` runs the selectors against sample rows
+and fails when a whole-board attachment read is left unfiltered; an e2e test
+exports through the API with and without the archive, and passes in Chromium.
+
+</details>
+
+and updates the following dependencies:
+
+- [@babel/cli uses glob 14.0.3, past CVE-2026-118773](https://github.com/wekan/wekan/commit/31ab7207922bbea23234f65e6be1dcfbcbd340f2):
+  a development tool's glob 13.0.6 kept walking the filesystem after its
+  AbortSignal fired; @babel/cli never passes one, and now has WeKan's glob.
+  Thanks to xet7.
+
+and fixes the following bugs:
+
+**UCS App Center** - publishing a release to Univention's App Center.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e42c01c77d506a0fca11d1eccad29cb15311feff">The FerretDB UID check works on the distroless image, so v13.32 can be published</a>. Thanks to xet7.</summary>
+
+The UCS App Center run for v13.32 stopped before uploading the portal draft:
+"Selected FerretDB image must use UID 1000". The image does use UID 1000, but
+the check ran `docker run --entrypoint id` in it, and the FerretDB image is
+distroless: there is no `id` program, so the check failed on every image. Now
+the UID is read without running anything in the image - its USER from `docker
+image inspect` and, for a user name, the uid from the image's own
+`/etc/passwd`. `tests/ucsRelease.test.py` drives it with a distroless-style
+passwd, and a negative test fails when the publisher runs `id`, `sh` or another
+tool inside an image again.
+
+</details>
+
+and has the following developer-tooling fix:
+
+**Tests** - the Azure Blob storage test.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/586e44739bff21406e43e490b72744cd0d814015">The Azurite test starts Azurite with its own node, so it no longer hangs</a>. Thanks to xet7.</summary>
+
+Azurite's `node_modules/.bin` shim starts with `#!/usr/bin/env node`. Where no
+node is on the PATH, Azurite never started, the Azure SDK retried every request
+and the suite runner killed `tests/azureBlobAdapter.test.cjs` after 300 s. It
+now runs Azurite's script with `process.execPath`: 3 tests in 4 s.
+
+</details>
+
+and updates the translations:
+
+**Translations** - strings for Omi's Gitea folder pages and the board export,
+and Walloon corrected.
+
+**Languages updated:** 244 languages.
+
+- [Delete all orphans and Gitea database migration version, in every language](https://github.com/wekan/wekan/commit/0d370b84b1b03e047732270b2cea1a88101c21b4):
+  four new strings Omi copies into its catalogs. Thanks to xet7.
+- [Without archived items, in every language](https://github.com/wekan/wekan/commit/3f0647e2d8b962b6974b7b95c75d53c62fa99b83):
+  the board export's new entry. Thanks to Raymond-Voogt and xet7.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/901d9d0eea579513678867e0280b2e69768a4012">Walloon is Walloon, not French, Catalan or invented words</a>. Thanks to xet7.</summary>
+
+About 1340 of the 5804 Walloon values were French ("Ajouter une checklist"),
+Catalan/Occitan or invented ("Esportar la căte", "Mintrepond" for log in, move
+and uploaded by alike), spelled with "ă" where Walloon writes "å", left in
+English, or translations of an older English text. They are rewritten in
+Walloon with the file's own vocabulary, the assignee is "responsåve"
+throughout, and every correction is in `audited-corrections.json`, so a
+Transifex pull that brings an old value back is repaired. The corrected search
+operators keep their old words as aliases. `wa-RR` is Waray-Waray and is
+unchanged. `tests/walloonCorrections20261125.test.cjs` fails on French,
+invented words, "ă" or a changed placeholder.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.32 2026-11-25 WeKan ® release
 
 **In short:** Every bundle, snap and Docker image is **about 220 MiB

@@ -279,6 +279,7 @@
   "desktop-mode": "Kplɔ̃dzi mɔ",
   "mobile-mode": "Asitelefon mɔ",
   "mobile-desktop-toggle": "Trɔ asi le asitelefon kple kplɔ̃dzi mɔ dome",
+  "html4-html5-toggle": "Trɔ asi le HTML4 kple HTML5 kpɔkpɔ dome",
   "zoom-in": "Na nu lolo",
   "zoom-out": "Na nu sue",
   "zoom-level": "Nunana ƒe lolome",
@@ -850,6 +851,7 @@
   "export": "Ɖe ɖe go",
   "export-board": "Tsɔ ŋɔŋlɔkpe la do goe",
   "export-board-without-attachments": "nusiwo wokpe ɖe eŋu manɔ eme o",
+  "export-board-without-archive": "nusiwo wodzra ɖo manɔ eme o",
   "export-ical-feed": "Kalenda (iCal)",
   "user-can-not-export-excel": "Zazãla mate ŋu atsɔ ɖe go abe Excel ene o",
   "export-card": "Tsɔ kaɖi ɖe go",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Wotutui",
   "gitea-freed": "wovoe",
   "gitea-deleted-list": "Nudzraɖoƒe siwo wotutu",
-  "gitea-index-stale": "Mele yeye o tso esime wotutu nane: gadzidze be nàkpɔ lolome vavãwo."
+  "gitea-index-stale": "Mele yeye o tso esime wotutu nane: gadzidze be nàkpɔ lolome vavãwo.",
+  "gitea-db-migration-version": "Gitea nyatakakadzraɖoƒe ƒe ʋuʋu ƒe tɔtrɔ",
+  "gitea-orphans-delete": "Tutu tsyɔ̃eviwo katã",
+  "gitea-orphans-delete-confirm": "Esia tutua tsyɔ̃evifaɛl siwo nanekee le nyatakakadzraɖoƒe la me mezãna o, kple nyatakakadzraɖoƒe ƒe fli siwo ƒe faɛl bu la ɖa le Gitea nudzraɖoƒe la me tegbee. Nu sia nu si wole zãzãm ne wole etutum la, woadzrae ɖo. Ŋlɔ tsyɔ̃eviwo ƒe xexlẽme be nàyi edzi:",
+  "gitea-orphans-delete-wrong-number": "Xexlẽdzesi si nèŋlɔ la menye tsyɔ̃eviwo ƒe xexlẽme o. Wometutu naneke o."
 }

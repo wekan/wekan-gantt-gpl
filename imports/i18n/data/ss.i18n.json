@@ -279,6 +279,7 @@
   "desktop-mode": "Imodi Yekhompyutha",
   "mobile-mode": "Imodi Yeselula",
   "mobile-desktop-toggle": "Shintja emkhatsini Wemodi Yeselula Neyekhompyutha",
+  "html4-html5-toggle": "Shintja emkhatsini kwekubuka kwe-HTML4 nekwe-HTML5",
   "zoom-in": "Khulisa",
   "zoom-out": "Nciphisa",
   "zoom-level": "Lizinga Lekukhulisa",
@@ -850,6 +851,7 @@
   "export": "Tfumela",
   "export-board": "Khipha libhodi",
   "export-board-without-attachments": "ngaphandle kwalokunamatsiselwe",
+  "export-board-without-archive": "ngaphandle kwetintfo letigciniwe",
   "export-ical-feed": "Likhalenda (iCal)",
   "user-can-not-export-excel": "Umsebentisi akakhoni kutfumela ngaphandle nge-Excel",
   "export-card": "Tfumela likhadi ngaphandle",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Kusuliwe",
   "gitea-freed": "kukhululiwe",
   "gitea-deleted-list": "Emarepository lasusiwe",
-  "gitea-index-stale": "Akusesikhatsini kusukela kusulwa: linganisa futsi kute utfole bukhulu lobuncono."
+  "gitea-index-stale": "Akusesikhatsini kusukela kusulwa: linganisa futsi kute utfole bukhulu lobuncono.",
+  "gitea-db-migration-version": "Inguculo yekutfutsa i-database ye-Gitea",
+  "gitea-orphans-delete": "Susa tonkhe tintsandzane",
+  "gitea-orphans-delete-confirm": "Loku kusula unomphela elifoldeni le-Gitea emafayela etintsandzane langasetjentiswa ngalutfo ku-database, nemalayini e-database lalahlekelwe lifayela lawo. Nobe yini lesetjentiswako ngesikhatsi isulwa iyagcinwa. Bhala linani letintsandzane kute uchubeke:",
+  "gitea-orphans-delete-wrong-number": "Inombolo lebhaliwe akusilo linani letintsandzane. Kute lokusuliwe."
 }

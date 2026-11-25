@@ -279,6 +279,7 @@
   "desktop-mode": "حالت دسکتاپ",
   "mobile-mode": "حالت موبایل",
   "mobile-desktop-toggle": "جابه‌جایی بین حالت موبایل و دسکتاپ",
+  "html4-html5-toggle": "جابه‌جایی بین نمای HTML4 و HTML5",
   "zoom-in": "بزرگ‌نمایی",
   "zoom-out": "کوچک‌نمایی",
   "zoom-level": "سطح بزرگ‌نمایی",
@@ -850,6 +851,7 @@
   "export": "برون‌بری",
   "export-board": "انتقال به بیرون برد",
   "export-board-without-attachments": "بدون ضمیمه‌ها",
+  "export-board-without-archive": "بدون موارد بایگانی شده",
   "export-ical-feed": "تقویم (iCal)",
   "user-can-not-export-excel": "کاربر قادر به گرفتن خروجی اکسلب نیست",
   "export-card": "برون‌بری کارت",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "حذف شد",
   "gitea-freed": "آزاد شد",
   "gitea-deleted-list": "مخزن‌های حذف‌شده",
-  "gitea-index-stale": "از زمان یک حذف قدیمی شده است: برای اندازه‌های دقیق دوباره اندازه بگیرید."
+  "gitea-index-stale": "از زمان یک حذف قدیمی شده است: برای اندازه‌های دقیق دوباره اندازه بگیرید.",
+  "gitea-db-migration-version": "نسخه مهاجرت پایگاه داده Gitea",
+  "gitea-orphans-delete": "حذف همه یتیم‌ها",
+  "gitea-orphans-delete-confirm": "این کار فایل‌های یتیمی را که هیچ چیز در پایگاه داده از آن‌ها استفاده نمی‌کند، و ردیف‌هایی از پایگاه داده را که فایلشان از بین رفته است، برای همیشه از پوشه Gitea حذف می‌کند. هر چیزی که هنگام حذف در حال استفاده باشد نگه داشته می‌شود. برای ادامه تعداد یتیم‌ها را بنویسید:",
+  "gitea-orphans-delete-wrong-number": "عدد نوشته‌شده تعداد یتیم‌ها نیست. چیزی حذف نشد."
 }

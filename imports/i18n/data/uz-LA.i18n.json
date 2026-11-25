@@ -279,6 +279,7 @@
   "desktop-mode": "Ish stoli rejimi",
   "mobile-mode": "Mobil rejim",
   "mobile-desktop-toggle": "Mobil va ish stoli rejimini almashtiring",
+  "html4-html5-toggle": "HTML4 va HTML5 ko‘rinishini almashtiring",
   "zoom-in": "Kattalashtirish",
   "zoom-out": "Kichraytirish",
   "zoom-level": "Kattalashtirish darajasi",
@@ -850,6 +851,7 @@
   "export": "Eksport qilish",
   "export-board": "Eksport paneli",
   "export-board-without-attachments": "biriktirmalarsiz",
+  "export-board-without-archive": "arxivlangan elementlarsiz",
   "export-ical-feed": "Kalendar (iCal)",
   "user-can-not-export-excel": "Foydalanuvchi Excelni eksport qila olmaydi",
   "export-card": "Eksport kartasi",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Oʻchirildi",
   "gitea-freed": "boʻshatildi",
   "gitea-deleted-list": "Oʻchirilgan repozitoriylar",
-  "gitea-index-stale": "Oʻchirishdan beri eskirgan: aniq hajmlar uchun qayta oʻlchang."
+  "gitea-index-stale": "Oʻchirishdan beri eskirgan: aniq hajmlar uchun qayta oʻlchang.",
+  "gitea-db-migration-version": "Gitea maʼlumotlar bazasining migratsiya versiyasi",
+  "gitea-orphans-delete": "Barcha yetimlarni oʻchirish",
+  "gitea-orphans-delete-confirm": "Bu Gitea jildidan maʼlumotlar bazasida hech narsa foydalanmaydigan yetim fayllarni va fayli yoʻqolgan maʼlumotlar bazasi qatorlarini butunlay oʻchiradi. Oʻchirish paytida foydalanilayotgan har qanday narsa saqlanadi. Davom etish uchun yetimlar sonini yozing:",
+  "gitea-orphans-delete-wrong-number": "Yozilgan son yetimlar soni emas. Hech narsa oʻchirilmadi."
 }

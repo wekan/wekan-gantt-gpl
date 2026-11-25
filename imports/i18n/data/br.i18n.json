@@ -279,6 +279,7 @@
   "desktop-mode": "Mod degel",
   "mobile-mode": "Mod gompet",
   "mobile-desktop-toggle": "Cheñch etre ar mod hezoug hag ar mod burev",
+  "html4-html5-toggle": "Cheñch etre ar gwel HTML4 hag ar gwel HTML5",
   "zoom-in": "Brasaat",
   "zoom-out": "Bihanaat",
   "zoom-level": "Live zoum",
@@ -850,6 +851,7 @@
   "export": "Ezporzhiañ",
   "export-board": "Ezporzhiañ an daolenn",
   "export-board-without-attachments": "hep stagadennoù",
+  "export-board-without-archive": "hep an elfennoù diellet",
   "export-ical-feed": "Fodenn kalendr (iCal)",
   "user-can-not-export-excel": "Ne c’hall ket an implijer ezporzhiañ da Excel",
   "export-card": "Ezporzhiañ ar gartenn",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Diverket",
   "gitea-freed": "dieubet",
   "gitea-deleted-list": "Kladennoù diverket",
-  "gitea-index-stale": "Dispredet abaoe un diverkadenn: muzuliit en-dro evit kaout ar mentoù resis."
+  "gitea-index-stale": "Dispredet abaoe un diverkadenn: muzuliit en-dro evit kaout ar mentoù resis.",
+  "gitea-db-migration-version": "Stumm divroañ diaz roadennoù Gitea",
+  "gitea-orphans-delete": "Diverkañ an holl emzivaded",
+  "gitea-orphans-delete-confirm": "Kement-mañ a ziverk da viken eus an teuliad Gitea ar restroù emzivad ha n'int implijet gant netra en diaz roadennoù, hag al linennoù en diaz roadennoù ma'z eo aet o restr da get. Pep tra a vez implijet pa vez diverket a vez miret. Skrivit niver an emzivaded evit kenderc'hel:",
+  "gitea-orphans-delete-wrong-number": "An niver skrivet n'eo ket niver an emzivaded. Netra n'eo bet diverket."
 }

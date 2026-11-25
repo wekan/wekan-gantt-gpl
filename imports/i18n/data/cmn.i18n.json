@@ -279,6 +279,7 @@
   "desktop-mode": "桌面模式",
   "mobile-mode": "移动模式",
   "mobile-desktop-toggle": "在移动和桌面模式之间切换",
+  "html4-html5-toggle": "在 HTML4 和 HTML5 视图之间切换",
   "zoom-in": "放大",
   "zoom-out": "缩小",
   "zoom-level": "缩放级别",
@@ -850,6 +851,7 @@
   "export": "导出",
   "export-board": "出口板",
   "export-board-without-attachments": "不含附件",
+  "export-board-without-archive": "不含已存档项目",
   "export-ical-feed": "日历 (iCal)",
   "user-can-not-export-excel": "用户无法导出 E​​xcel",
   "export-card": "出口卡",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "已删除",
   "gitea-freed": "已释放",
   "gitea-deleted-list": "已删除的仓库",
-  "gitea-index-stale": "自删除以来已过时：重新测量以获得准确大小。"
+  "gitea-index-stale": "自删除以来已过时：重新测量以获得准确大小。",
+  "gitea-db-migration-version": "Gitea 数据库迁移版本",
+  "gitea-orphans-delete": "删除所有孤立项",
+  "gitea-orphans-delete-confirm": "这将从 Gitea 文件夹中永久删除数据库中没有任何内容使用的孤立文件，以及其文件已不存在的数据库行。删除时仍在使用的任何内容都会保留。输入孤立项的数量以继续：",
+  "gitea-orphans-delete-wrong-number": "输入的数字不是孤立项的数量。未删除任何内容。"
 }

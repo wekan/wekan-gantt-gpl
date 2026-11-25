@@ -279,6 +279,7 @@
   "desktop-mode": "Namizni način",
   "mobile-mode": "Mobilni način",
   "mobile-desktop-toggle": "Preklopi med mobilnim in namiznim načinom",
+  "html4-html5-toggle": "Preklopi med pogledom HTML4 in HTML5",
   "zoom-in": "Povečaj",
   "zoom-out": "Pomanjšaj",
   "zoom-level": "Stopnja povečave",
@@ -850,6 +851,7 @@
   "export": "Izvozi",
   "export-board": "Izvozi tablo",
   "export-board-without-attachments": "brez priponk",
+  "export-board-without-archive": "brez arhiviranih elementov",
   "export-ical-feed": "Koledar (iCal)",
   "user-can-not-export-excel": "Uporabnik ne more izvoziti v Excel",
   "export-card": "Izvozi kartico",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Izbrisano",
   "gitea-freed": "sproščenih",
   "gitea-deleted-list": "Izbrisani repozitoriji",
-  "gitea-index-stale": "Zastarelo od izbrisa: izmerite znova za natančne velikosti."
+  "gitea-index-stale": "Zastarelo od izbrisa: izmerite znova za natančne velikosti.",
+  "gitea-db-migration-version": "Različica migracije podatkovne zbirke Gitea",
+  "gitea-orphans-delete": "Izbriši vse sirote",
+  "gitea-orphans-delete-confirm": "S tem trajno izbrišete iz mape Gitea osirotele datoteke, ki jih nič v podatkovni zbirki ne uporablja, in vrstice podatkovne zbirke, katerih datoteke ni več. Vse, kar je v uporabi v trenutku brisanja, se ohrani. Za nadaljevanje vnesite število sirot:",
+  "gitea-orphans-delete-wrong-number": "Vneseno število ni število sirot. Nič ni bilo izbrisano."
 }

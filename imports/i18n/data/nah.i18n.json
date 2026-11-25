@@ -279,6 +279,7 @@
   "desktop-mode": "Tlahcuiloltepoztli tlachializtli",
   "mobile-mode": "Mamalhuaztepoztli tlachializtli",
   "mobile-desktop-toggle": "Xicpatla mamalhuaztepoztli ihuan tlahcuiloltepoztli tlachializtli",
+  "html4-html5-toggle": "Xicpatla HTML4 ihuan HTML5 tlachializtli",
   "zoom-in": "Xicueyilia tlachializtli",
   "zoom-out": "Xictzincui tlachializtli",
   "zoom-level": "Tlachializtli hueyiliztli",
@@ -850,6 +851,7 @@
   "export": "Xicquixti",
   "export-board": "Xicquixti huapalli",
   "export-board-without-attachments": "amo ica tlanamictiltin",
+  "export-board-without-archive": "amo ica tlamantli opixquiltin",
   "export-ical-feed": "Tonalamatl (iCal)",
   "user-can-not-export-excel": "Tlacatl amo huel tlaquixtia Excel",
   "export-card": "Xicquixti amatlapalli",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Mopolo",
   "gitea-freed": "omomaquix",
   "gitea-deleted-list": "Tlapiyalcalli tlein mopolohqueh",
-  "gitea-index-stale": "Ahmo yancuic ihuicpa ce tlapololiztli: occeppa xictamachihua ic melahuac huehueyiliztli."
+  "gitea-index-stale": "Ahmo yancuic ihuicpa ce tlapololiztli: occeppa xictamachihua ic melahuac huehueyiliztli.",
+  "gitea-db-migration-version": "Inyancuiyoliz in Gitea tlapiyalcalli",
+  "gitea-orphans-delete": "Xicpolo mochintin icnotlacah",
+  "gitea-orphans-delete-confirm": "Inin quipolohua mochipa ipan Gitea tlapiyalli in icnoamatl in ahtlein quitequitiltia ipan tlapiyalcalli, ihuan in tecpantli ipan tlapiyalcalli in ahmo occeppa quipiya inamauh. In tlein motequitiltia ihcuac mopolohua, mopiya. Xicihcuilo quezqui icnotlacah ic tiyaz:",
+  "gitea-orphans-delete-wrong-number": "In tlapohualli tlahcuiloltli ahmo quezqui icnotlacah. Ahtlein mopolo."
 }

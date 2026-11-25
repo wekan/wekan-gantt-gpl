@@ -279,6 +279,7 @@
   "desktop-mode": "Modalità desktop",
   "mobile-mode": "Modalità mobile",
   "mobile-desktop-toggle": "Passa tra 'a mudaletà mobile e desktop",
+  "html4-html5-toggle": "Passa tra 'a vista HTML4 e HTML5",
   "zoom-in": "Ingrannisce",
   "zoom-out": "Riduce",
   "zoom-level": "Livello 'e zoom",
@@ -850,6 +851,7 @@
   "export": "Sporta",
   "export-board": "Spurtà 'a tavula",
   "export-board-without-attachments": "senza allegate",
+  "export-board-without-archive": "senza elemente archiviate",
   "export-ical-feed": "Calannàrio (iCal)",
   "user-can-not-export-excel": "L'utente nun può effettuare l'esportazione 'n Excel",
   "export-card": "Sporta carta",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Scancellato",
   "gitea-freed": "libberate",
   "gitea-deleted-list": "Repository scancellate",
-  "gitea-index-stale": "Viecchio 'a na scancellazione: misura n'ata vota pe' 'e grandezze esatte."
+  "gitea-index-stale": "Viecchio 'a na scancellazione: misura n'ata vota pe' 'e grandezze esatte.",
+  "gitea-db-migration-version": "Verzione d''a migrazione d''o database 'e Gitea",
+  "gitea-orphans-delete": "Scancella tutte ll'orfane",
+  "gitea-orphans-delete-confirm": "Chesto scancella pe' sempe d''a cartella 'e Gitea 'e file orfane ca niente dint''o database ausa, e 'e righe d''o database ca 'o file lloro nun ce sta cchiù. Chello ca se sta ausanno quanno se scancella se tene. Scrive 'o nummero 'e orfane pe' ghì annanze:",
+  "gitea-orphans-delete-wrong-number": "'O nummero scritto nun è 'o nummero 'e orfane. Nun s'è scancellato niente."
 }

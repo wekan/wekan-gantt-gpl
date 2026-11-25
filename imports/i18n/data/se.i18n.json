@@ -279,6 +279,7 @@
   "desktop-mode": "Beavdeordinmoduvla",
   "mobile-mode": "Mátketelefonmoduvla",
   "mobile-desktop-toggle": "Lonohala mátketelefon- ja beavdeordinmoduvlla gaskkas",
+  "html4-html5-toggle": "Lonohala HTML4- ja HTML5-čájehusa gaskkas",
   "zoom-in": "Stuorit",
   "zoom-out": "Unnit",
   "zoom-level": "Stuoridanmuddu",
@@ -850,6 +851,7 @@
   "export": "Olggosfievrrit",
   "export-board": "Olggosfievrrit távvala",
   "export-board-without-attachments": "mildosiid haga",
+  "export-board-without-archive": "vurkejuvvon áđaid haga",
   "export-ical-feed": "Kaleanddar (iCal)",
   "user-can-not-export-excel": "Geavaheaddji ii sáhte olggosfievrridit Excelii",
   "export-card": "Olggosfievrrit goartta",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Sihkkojuvvon",
   "gitea-freed": "friddjejuvvon",
   "gitea-deleted-list": "Sihkkojuvvon ráját",
-  "gitea-index-stale": "Boaresmuvvan sihkkuma rájes: mihtit fas dárkilis sturrodagaid várás."
+  "gitea-index-stale": "Boaresmuvvan sihkkuma rájes: mihtit fas dárkilis sturrodagaid várás.",
+  "gitea-db-migration-version": "Gitea-diehtovuođu sirdinveršuvdna",
+  "gitea-orphans-delete": "Sihko buot orbmosiid",
+  "gitea-orphans-delete-confirm": "Dát sihkku agibeaivái Gitea-máhpas orbmosfiillaid maid mihkkege diehtovuođus ii geavat, ja diehtovuođu rávnniid main fiila lea jávkan. Buot mii lea geavahusas go dat sihkkojuvvo, seilu. Čále orbmosiid logu joatkit:",
+  "gitea-orphans-delete-wrong-number": "Čállon lohku ii leat orbmosiid lohku. Mihkkege ii sihkkojuvvon."
 }

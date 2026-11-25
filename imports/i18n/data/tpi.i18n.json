@@ -279,6 +279,7 @@
   "desktop-mode": "Pasin bilong bikpela kompiuta",
   "mobile-mode": "Pasin bilong mobail",
   "mobile-desktop-toggle": "Senisim namel long pasin bilong mobail na bikpela kompiuta",
+  "html4-html5-toggle": "Senisim namel long lukluk bilong HTML4 na HTML5",
   "zoom-in": "Mekim bikpela",
   "zoom-out": "Mekim liklik",
   "zoom-level": "Mak bilong bikpela",
@@ -850,6 +851,7 @@
   "export": "Salim i go aut",
   "export-board": "Salim bot i go",
   "export-board-without-attachments": "Na i no gat ol fail i pas",
+  "export-board-without-archive": "Na i no gat ol samting i stap long akaiv",
   "export-ical-feed": "Kalenda (iCal)",
   "user-can-not-export-excel": "Yusa i no inap salim i go aut long Excel",
   "export-card": "Salim i go kat",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Rausim",
   "gitea-freed": "i fri",
   "gitea-deleted-list": "Ol ripositori i rausim pinis",
-  "gitea-index-stale": "I no nupela moa bihain long wanpela rausim: mesarim gen long kisim stretpela sais."
+  "gitea-index-stale": "I no nupela moa bihain long wanpela rausim: mesarim gen long kisim stretpela sais.",
+  "gitea-db-migration-version": "Namba bilong senis bilong database bilong Gitea",
+  "gitea-orphans-delete": "Rausim olgeta wanpis",
+  "gitea-orphans-delete-confirm": "Dispela i rausim olgeta taim long folda bilong Gitea ol wanpis fail we i no gat wanpela samting long database i yusim, na ol lain long database we fail bilong ol i lus pinis. Olgeta samting ol i yusim taim ol i rausim, bai i stap yet. Raitim hamas wanpis i gat bilong go het:",
+  "gitea-orphans-delete-wrong-number": "Namba yu raitim i no hamas wanpis i gat. I no rausim wanpela samting."
 }

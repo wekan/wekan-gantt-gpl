@@ -279,6 +279,7 @@
   "desktop-mode": "Ipo tabili",
   "mobile-mode": "Ipo Alagbeka",
   "mobile-desktop-toggle": "Yipada laarin Alagbeka ati Ipo Ojú-iṣẹ",
+  "html4-html5-toggle": "Yipada laarin Iwo HTML4 ati HTML5",
   "zoom-in": "Sun-un sinu",
   "zoom-out": "Sun-un Jade",
   "zoom-level": "Ipele Sun-un",
@@ -850,6 +851,7 @@
   "export": "Okeere",
   "export-board": "Okeere pátákó",
   "export-board-without-attachments": "laisi awọn asomọ",
+  "export-board-without-archive": "laisi awọn ohun ti a fipamọ",
   "export-ical-feed": "Kalẹnda (iCal)",
   "user-can-not-export-excel": "Olumulo ko le okeere Excel",
   "export-card": "Kaadi okeere",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "A parẹ́",
   "gitea-freed": "ni a tú sílẹ̀",
   "gitea-deleted-list": "Àwọn ibi ìpamọ́ tí a parẹ́",
-  "gitea-index-stale": "Kò bá ìgbà mu láti ìgbà píparẹ́ kan: wọ̀n lẹ́ẹ̀kan sí i fún ìwọ̀n tó péye."
+  "gitea-index-stale": "Kò bá ìgbà mu láti ìgbà píparẹ́ kan: wọ̀n lẹ́ẹ̀kan sí i fún ìwọ̀n tó péye.",
+  "gitea-db-migration-version": "Ẹ̀yà ìṣípòpadà ibùdó dátà Gitea",
+  "gitea-orphans-delete": "Pa gbogbo àwọn ọmọ òrukàn rẹ́",
+  "gitea-orphans-delete-confirm": "Èyí yóò pa rẹ́ títí láé kúrò nínú fódà Gitea àwọn fáìlì ọmọ òrukàn tí ohunkóhun nínú ibùdó dátà kò lò, àti àwọn ìlà ibùdó dátà tí fáìlì wọn ti sọnù. Ohunkóhun tí a ń lò nígbà tí a bá ń pa á rẹ́ ni a ó pa mọ́. Tẹ iye àwọn ọmọ òrukàn láti tẹ̀síwájú:",
+  "gitea-orphans-delete-wrong-number": "Nọ́mbà tí a tẹ̀ kì í ṣe iye àwọn ọmọ òrukàn. Kò sí ohun tí a parẹ́."
 }

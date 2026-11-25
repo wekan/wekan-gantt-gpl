@@ -279,6 +279,7 @@
   "desktop-mode": "ڈیسک ٹاپ موڈ",
   "mobile-mode": "موبائل موڈ",
   "mobile-desktop-toggle": "موبائل اور ڈیسک ٹاپ موڈ کے درمیان تبدیل کریں",
+  "html4-html5-toggle": "HTML4 اور HTML5 منظر کے درمیان تبدیل کریں",
   "zoom-in": "بڑا کریں",
   "zoom-out": "چھوٹا کریں",
   "zoom-level": "زوم کی سطح",
@@ -850,6 +851,7 @@
   "export": "برآمد کریں",
   "export-board": "بورڈ برآمد کریں",
   "export-board-without-attachments": "منسلکات کے بغیر",
+  "export-board-without-archive": "محفوظ شدہ اشیاء کے بغیر",
   "export-ical-feed": "کیلنڈر فیڈ (iCal)",
   "user-can-not-export-excel": "صارف Excel برآمد نہیں کر سکتا",
   "export-card": "کارڈ برآمد کریں",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "حذف شدہ",
   "gitea-freed": "خالی ہوئے",
   "gitea-deleted-list": "حذف شدہ ریپوزٹریز",
-  "gitea-index-stale": "ایک حذف کے بعد سے پرانا: درست سائزز کے لیے دوبارہ ناپیں۔"
+  "gitea-index-stale": "ایک حذف کے بعد سے پرانا: درست سائزز کے لیے دوبارہ ناپیں۔",
+  "gitea-db-migration-version": "Gitea ڈیٹا بیس مائیگریشن ورژن",
+  "gitea-orphans-delete": "تمام یتیم حذف کریں",
+  "gitea-orphans-delete-confirm": "یہ Gitea فولڈر سے ہمیشہ کے لیے وہ یتیم فائلیں حذف کر دیتا ہے جنہیں ڈیٹا بیس میں کوئی چیز استعمال نہیں کرتی، اور ڈیٹا بیس کی وہ قطاریں جن کی فائل غائب ہے۔ حذف کرتے وقت جو کچھ بھی استعمال میں ہو، اسے رکھا جاتا ہے۔ جاری رکھنے کے لیے یتیموں کی تعداد ٹائپ کریں:",
+  "gitea-orphans-delete-wrong-number": "ٹائپ کیا گیا عدد یتیموں کی تعداد نہیں ہے۔ کچھ بھی حذف نہیں ہوا۔"
 }

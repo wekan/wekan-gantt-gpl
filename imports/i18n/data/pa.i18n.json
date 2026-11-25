@@ -279,6 +279,7 @@
   "desktop-mode": "ਡੈਸਕਟਾਪ ਮੋਡ",
   "mobile-mode": "ਮੋਬਾਈਲ ਮੋਡ",
   "mobile-desktop-toggle": "ਮੋਬਾਈਲ ਅਤੇ ਡੈਸਕਟਾਪ ਮੋਡ ਵਿਚਕਾਰ ਟੌਗਲ ਕਰੋ",
+  "html4-html5-toggle": "HTML4 ਅਤੇ HTML5 ਦ੍ਰਿਸ਼ ਵਿਚਕਾਰ ਟੌਗਲ ਕਰੋ",
   "zoom-in": "ਜ਼ੂਮ ਇਨ ਕਰੋ",
   "zoom-out": "ਜ਼ੂਮ ਆਉਟ ਕਰੋ",
   "zoom-level": "ਜ਼ੂਮ ਪੱਧਰ",
@@ -850,6 +851,7 @@
   "export": "ਨਿਰਯਾਤ ਕਰੋ",
   "export-board": "ਨਿਰਯਾਤ ਬੋਰਡ",
   "export-board-without-attachments": "ਅਟੈਚਮੈਂਟਾਂ ਤੋਂ ਬਿਨਾਂ",
+  "export-board-without-archive": "ਪੁਰਾਲੇਖ ਕੀਤੀਆਂ ਆਈਟਮਾਂ ਤੋਂ ਬਿਨਾਂ",
   "export-ical-feed": "ਕੈਲੰਡਰ (iCal)",
   "user-can-not-export-excel": "ਉਪਭੋਗਤਾ ਐਕਸਲ ਨੂੰ ਨਿਰਯਾਤ ਨਹੀਂ ਕਰ ਸਕਦਾ ਹੈ",
   "export-card": "ਕਾਰਡ ਐਕਸਪੋਰਟ ਕਰੋ",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "ਮਿਟਾਇਆ",
   "gitea-freed": "ਖਾਲੀ ਹੋਇਆ",
   "gitea-deleted-list": "ਮਿਟਾਈਆਂ ਰਿਪੋਜ਼ਟਰੀਆਂ",
-  "gitea-index-stale": "ਇੱਕ ਮਿਟਾਉਣ ਤੋਂ ਬਾਅਦ ਪੁਰਾਣਾ: ਸਹੀ ਆਕਾਰਾਂ ਲਈ ਦੁਬਾਰਾ ਮਾਪੋ।"
+  "gitea-index-stale": "ਇੱਕ ਮਿਟਾਉਣ ਤੋਂ ਬਾਅਦ ਪੁਰਾਣਾ: ਸਹੀ ਆਕਾਰਾਂ ਲਈ ਦੁਬਾਰਾ ਮਾਪੋ।",
+  "gitea-db-migration-version": "Gitea ਡਾਟਾਬੇਸ ਮਾਈਗ੍ਰੇਸ਼ਨ ਸੰਸਕਰਣ",
+  "gitea-orphans-delete": "ਸਾਰੇ ਅਨਾਥ ਮਿਟਾਓ",
+  "gitea-orphans-delete-confirm": "ਇਹ Gitea ਫੋਲਡਰ ਵਿੱਚੋਂ ਹਮੇਸ਼ਾ ਲਈ ਉਹ ਅਨਾਥ ਫ਼ਾਈਲਾਂ ਮਿਟਾ ਦਿੰਦਾ ਹੈ ਜਿਨ੍ਹਾਂ ਨੂੰ ਡਾਟਾਬੇਸ ਵਿੱਚ ਕੁਝ ਵੀ ਨਹੀਂ ਵਰਤਦਾ, ਅਤੇ ਡਾਟਾਬੇਸ ਦੀਆਂ ਉਹ ਕਤਾਰਾਂ ਜਿਨ੍ਹਾਂ ਦੀ ਫ਼ਾਈਲ ਗੁੰਮ ਹੈ। ਮਿਟਾਉਣ ਵੇਲੇ ਜੋ ਕੁਝ ਵੀ ਵਰਤੋਂ ਵਿੱਚ ਹੋਵੇ, ਉਹ ਰੱਖਿਆ ਜਾਂਦਾ ਹੈ। ਅੱਗੇ ਵਧਣ ਲਈ ਅਨਾਥਾਂ ਦੀ ਗਿਣਤੀ ਲਿਖੋ:",
+  "gitea-orphans-delete-wrong-number": "ਲਿਖਿਆ ਅੰਕ ਅਨਾਥਾਂ ਦੀ ਗਿਣਤੀ ਨਹੀਂ ਹੈ। ਕੁਝ ਨਹੀਂ ਮਿਟਾਇਆ ਗਿਆ।"
 }

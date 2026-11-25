@@ -279,6 +279,7 @@
   "desktop-mode": "Mawonekedwe a Pakompyuta",
   "mobile-mode": "Mawonekedwe a Foni",
   "mobile-desktop-toggle": "Sinthani pakati pa Mawonekedwe a Foni ndi Pakompyuta",
+  "html4-html5-toggle": "Sinthani pakati pa Mawonekedwe a HTML4 ndi HTML5",
   "zoom-in": "Kulitsani",
   "zoom-out": "Chepetsani",
   "zoom-level": "Mulingo wa Kukulitsa",
@@ -850,6 +851,7 @@
   "export": "Tulutsani",
   "export-board": "Tulutsani bolodi",
   "export-board-without-attachments": "popanda zolumikizidwa",
+  "export-board-without-archive": "popanda zinthu zosungidwa",
   "export-ical-feed": "Kalendala (iCal)",
   "user-can-not-export-excel": "Wogwiritsa ntchito sangathe kutumiza ku Excel",
   "export-card": "Tumizani khadi",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Zachotsedwa",
   "gitea-freed": "zamasulidwa",
   "gitea-deleted-list": "Malo osungira ochotsedwa",
-  "gitea-index-stale": "Zakale kuyambira pomwe chinachotsedwa: yezaninso kuti mupeze makulidwe enieni."
+  "gitea-index-stale": "Zakale kuyambira pomwe chinachotsedwa: yezaninso kuti mupeze makulidwe enieni.",
+  "gitea-db-migration-version": "Mtundu wa kusamutsa database ya Gitea",
+  "gitea-orphans-delete": "Fufutani ana amasiye onse",
+  "gitea-orphans-delete-confirm": "Izi zimachotsa kwamuyaya mu foda ya Gitea mafayilo amasiye omwe palibe chilichonse mu database chimawagwiritsa ntchito, ndi mizere ya database yomwe fayilo yake yasowa. Chilichonse chomwe chikugwiritsidwa ntchito pamene chikuchotsedwa chimasungidwa. Lembani chiwerengero cha ana amasiye kuti mupitirize:",
+  "gitea-orphans-delete-wrong-number": "Nambala yolembedwa si chiwerengero cha ana amasiye. Palibe chomwe chachotsedwa."
 }

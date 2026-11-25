@@ -279,6 +279,7 @@
   "desktop-mode": "İş masası rejimi",
   "mobile-mode": "Mobil rejim",
   "mobile-desktop-toggle": "Mobil və Masaüstü rejimi arasında keçid edin",
+  "html4-html5-toggle": "HTML4 və HTML5 görünüşü arasında keçid edin",
   "zoom-in": "Böyüt",
   "zoom-out": "Uzaqlaşdır",
   "zoom-level": "Böyütmə Səviyyəsi",
@@ -850,6 +851,7 @@
   "export": "Ixrac et",
   "export-board": "İxrac lövhəsi",
   "export-board-without-attachments": "qoşmalar olmadan",
+  "export-board-without-archive": "arxivləşdirilmiş elementlər olmadan",
   "export-ical-feed": "Təqvim (iCal)",
   "user-can-not-export-excel": "İstifadəçi Excel-i ixrac edə bilməz",
   "export-card": "İxrac kartı",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Silinib",
   "gitea-freed": "boşaldıldı",
   "gitea-deleted-list": "Silinmiş repozitorilər",
-  "gitea-index-stale": "Silinmədən bəri köhnəlib: dəqiq ölçülər üçün yenidən ölçün."
+  "gitea-index-stale": "Silinmədən bəri köhnəlib: dəqiq ölçülər üçün yenidən ölçün.",
+  "gitea-db-migration-version": "Gitea verilənlər bazasının miqrasiya versiyası",
+  "gitea-orphans-delete": "Bütün yetimləri silin",
+  "gitea-orphans-delete-confirm": "Bu, verilənlər bazasında heç nəyin istifadə etmədiyi yetim faylları və faylı itmiş verilənlər bazası sətirlərini Gitea qovluğundan həmişəlik silir. Silinən anda istifadədə olan hər şey saxlanılır. Davam etmək üçün yetimlərin sayını yazın:",
+  "gitea-orphans-delete-wrong-number": "Yazılan rəqəm yetimlərin sayı deyil. Heç nə silinmədi."
 }

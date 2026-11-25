@@ -279,6 +279,7 @@
   "desktop-mode": "Werkskermmodus",
   "mobile-mode": "Mobiele modus",
   "mobile-desktop-toggle": "Wissel tussen mobiele en rekenaarmodus",
+  "html4-html5-toggle": "Wissel tussen HTML4- en HTML5-aansig",
   "zoom-in": "Zoem in",
   "zoom-out": "Zoem uit",
   "zoom-level": "Zoemvlak",
@@ -850,6 +851,7 @@
   "export": "Voer uit",
   "export-board": "Uitvoerbord",
   "export-board-without-attachments": "sonder aanhangsels",
+  "export-board-without-archive": "sonder geargiveerde items",
   "export-ical-feed": "Kalender (iCal)",
   "user-can-not-export-excel": "Gebruiker kan nie Excel uitvoer nie",
   "export-card": "Voer kaart uit",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Geskrap",
   "gitea-freed": "vrygemaak",
   "gitea-deleted-list": "Geskrapte bewaarplekke",
-  "gitea-index-stale": "Verouderd sedert 'n skrapping: meet weer vir presiese groottes."
+  "gitea-index-stale": "Verouderd sedert 'n skrapping: meet weer vir presiese groottes.",
+  "gitea-db-migration-version": "Gitea-databasismigrasieweergawe",
+  "gitea-orphans-delete": "Vee alle weeskinders uit",
+  "gitea-orphans-delete-confirm": "Dit skrap die weeslêers wat niks in die databasis gebruik nie, en die databasisrye waarvan die lêer weg is, permanent uit die Gitea-gids. Enigiets wat in gebruik is wanneer dit geskrap word, word behou. Tik die aantal weeskinders om voort te gaan:",
+  "gitea-orphans-delete-wrong-number": "Die getikte getal is nie die aantal weeskinders nie. Niks is geskrap nie."
 }

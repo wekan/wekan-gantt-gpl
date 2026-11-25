@@ -279,6 +279,7 @@
   "desktop-mode": "Skrivebordstilstand",
   "mobile-mode": "Mobiltilstand",
   "mobile-desktop-toggle": "Skift imellem mobil- og skrivebordstilstand",
+  "html4-html5-toggle": "Skift imellem HTML4- og HTML5-visning",
   "zoom-in": "Zoom ind",
   "zoom-out": "Zoom ud",
   "zoom-level": "Zoom niveau",
@@ -850,6 +851,7 @@
   "export": "Eksportér",
   "export-board": "Eksporter tavle",
   "export-board-without-attachments": "uden vedhæftninger",
+  "export-board-without-archive": "uden arkiverede elementer",
   "export-ical-feed": "Kalender (iCal)",
   "user-can-not-export-excel": "Brugeren kan ikke eksportere til Excel",
   "export-card": "Eksporter kort",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Slettet",
   "gitea-freed": "frigjort",
   "gitea-deleted-list": "Slettede repositories",
-  "gitea-index-stale": "Forældet siden en sletning: mål igen for nøjagtige størrelser."
+  "gitea-index-stale": "Forældet siden en sletning: mål igen for nøjagtige størrelser.",
+  "gitea-db-migration-version": "Gitea-databasens migreringsversion",
+  "gitea-orphans-delete": "Slet alle forældreløse",
+  "gitea-orphans-delete-confirm": "Dette sletter for altid de forældreløse filer, som intet i databasen bruger, og de databaserækker, hvis fil er væk, fra Gitea-mappen. Alt, der er i brug, når det slettes, bevares. Skriv antallet af forældreløse for at fortsætte:",
+  "gitea-orphans-delete-wrong-number": "Det indtastede tal er ikke antallet af forældreløse. Intet blev slettet."
 }

@@ -279,6 +279,7 @@
   "desktop-mode": "Mokgwa wa desekethopo",
   "mobile-mode": "Mokgwa wa mogala",
   "mobile-desktop-toggle": "Fetola fa gare ga mokgwa wa mogala le wa desekethopo",
+  "html4-html5-toggle": "Fetola fa gare ga pono ya HTML4 le ya HTML5",
   "zoom-in": "Godisa",
   "zoom-out": "Nnyefatsa",
   "zoom-level": "Selekanyo sa bogolo",
@@ -850,6 +851,7 @@
   "export": "Ntsha",
   "export-board": "Ntsha boto",
   "export-board-without-attachments": "kwa ntle ga tse di tshwaraganeng",
+  "export-board-without-archive": "kwa ntle ga dilo tse di bolokilweng",
   "export-ical-feed": "Tshedimosetso: Calendar (iCal)",
   "user-can-not-export-excel": "Modirisi ga a kgone go romela Excel",
   "export-card": "Romela karata",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "E phimotswe",
   "gitea-freed": "e golotsweng",
   "gitea-deleted-list": "Dipolokelo tse di phimotsweng",
-  "gitea-index-stale": "Ga e sa le ya gompieno fa e sale go phimolwa: lekanya gape go bona bogolo jo bo nepagetseng."
+  "gitea-index-stale": "Ga e sa le ya gompieno fa e sale go phimolwa: lekanya gape go bona bogolo jo bo nepagetseng.",
+  "gitea-db-migration-version": "Thanolo ya go fudusa database ya Gitea",
+  "gitea-orphans-delete": "Phimola dikhutsana tsotlhe",
+  "gitea-orphans-delete-confirm": "Se se phimola ka bosakhutleng mo foltareng ya Gitea difaele tsa dikhutsana tse go se nang sepe mo database se se di dirisang, le mela ya database e faele ya yone e latlhegileng. Sengwe le sengwe se se dirisiwang fa se phimolwa se a bolokwa. Kwala palo ya dikhutsana go tswelela:",
+  "gitea-orphans-delete-wrong-number": "Nomoro e e kwadilweng ga se palo ya dikhutsana. Ga go sepe se se phimotsweng."
 }

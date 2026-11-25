@@ -279,6 +279,7 @@
   "desktop-mode": "桌面模式",
   "mobile-mode": "移動模式",
   "mobile-desktop-toggle": "在行動和桌面模式之間切換",
+  "html4-html5-toggle": "在 HTML4 同 HTML5 檢視之間切換",
   "zoom-in": "放大",
   "zoom-out": "縮小",
   "zoom-level": "縮放等級",
@@ -850,6 +851,7 @@
   "export": "匯出",
   "export-board": "出口板",
   "export-board-without-attachments": "不含附件",
+  "export-board-without-archive": "不含已存檔項目",
   "export-ical-feed": "日曆 (iCal)",
   "user-can-not-export-excel": "用戶無法匯出 Excel",
   "export-card": "出口卡",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "刪除於",
   "gitea-freed": "騰出",
   "gitea-deleted-list": "已刪除嘅儲存庫",
-  "gitea-index-stale": "自從刪除之後已經過時：再量一次就有準確大小。"
+  "gitea-index-stale": "自從刪除之後已經過時：再量一次就有準確大小。",
+  "gitea-db-migration-version": "Gitea 資料庫遷移版本",
+  "gitea-orphans-delete": "刪除所有孤兒",
+  "gitea-orphans-delete-confirm": "呢個操作會將資料庫入面冇嘢用緊嘅孤兒檔案，同埋檔案已經唔見咗嘅資料庫行，由 Gitea 資料夾永久刪除。刪除嗰陣仲用緊嘅嘢都會保留。輸入孤兒嘅數目嚟繼續：",
+  "gitea-orphans-delete-wrong-number": "輸入嘅數字唔係孤兒嘅數目。乜嘢都冇刪除。"
 }

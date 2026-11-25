@@ -279,6 +279,7 @@
   "desktop-mode": "Moda sermaseyê",
   "mobile-mode": "Moda mobîlê",
   "mobile-desktop-toggle": "Di navbera moda mobîlê û sermaseyê de biguherîne",
+  "html4-html5-toggle": "Di navbera dîtina HTML4 û HTML5 de biguherîne",
   "zoom-in": "Nêzîk bike",
   "zoom-out": "Dûr bike",
   "zoom-level": "Asta nêzîkbûnê",
@@ -850,6 +851,7 @@
   "export": "Derxe",
   "export-board": "Depoyê derxe",
   "export-board-without-attachments": "bê pêvekan",
+  "export-board-without-archive": "bê hêmanên arşîvkirî",
   "export-ical-feed": "Salname (iCal)",
   "user-can-not-export-excel": "Bikarhêner nikare Excel derxe",
   "export-card": "Kartê derxe",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Hat jêbirin",
   "gitea-freed": "hat azadkirin",
   "gitea-deleted-list": "Repozîtoriyên jêbirî",
-  "gitea-index-stale": "Ji jêbirinekê ve kevn e: ji bo mezinahiyên rast dîsa bipîve."
+  "gitea-index-stale": "Ji jêbirinekê ve kevn e: ji bo mezinahiyên rast dîsa bipîve.",
+  "gitea-db-migration-version": "Guhertoya koçberiya danegeha Gitea",
+  "gitea-orphans-delete": "Hemû sêwiyan jê bibe",
+  "gitea-orphans-delete-confirm": "Ev ji peldanka Gitea her û her pelên sêwî yên ku tiştek di danegehê de wan bi kar nayîne, û rêzên danegehê yên ku pelê wan winda bûye jê dibe. Her tiştê ku dema jêbirinê tê bikaranîn tê parastin. Ji bo berdewamiyê hejmara sêwiyan binivîse:",
+  "gitea-orphans-delete-wrong-number": "Hejmara nivîsandî ne hejmara sêwiyan e. Tiştek nehat jêbirin."
 }

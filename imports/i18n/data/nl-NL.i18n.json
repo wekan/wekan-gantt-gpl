@@ -279,6 +279,7 @@
   "desktop-mode": "Desktop Modus",
   "mobile-mode": "Telefoon Modus",
   "mobile-desktop-toggle": "Schakel tussen Telefoon en Desktop Modus",
+  "html4-html5-toggle": "Schakel tussen HTML4- en HTML5-weergave",
   "zoom-in": "Inzoomen",
   "zoom-out": "Zoom Uit",
   "zoom-level": "Zoom Niveau",
@@ -850,6 +851,7 @@
   "export": "Exporteren",
   "export-board": "Exporteer bord",
   "export-board-without-attachments": "zonder bijlagen",
+  "export-board-without-archive": "zonder gearchiveerde items",
   "export-ical-feed": "Kalender (iCal)",
   "user-can-not-export-excel": "Gebruiker kan niet exporteren naar Excel",
   "export-card": "Exporteer kaart",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Verwijderd",
   "gitea-freed": "vrijgemaakt",
   "gitea-deleted-list": "Verwijderde repositories",
-  "gitea-index-stale": "Verouderd sinds een verwijdering: meet opnieuw voor exacte groottes."
+  "gitea-index-stale": "Verouderd sinds een verwijdering: meet opnieuw voor exacte groottes.",
+  "gitea-db-migration-version": "Migratieversie van de Gitea-database",
+  "gitea-orphans-delete": "Alle wezen verwijderen",
+  "gitea-orphans-delete-confirm": "Dit verwijdert definitief uit de Gitea-map de weesbestanden die niets in de database gebruikt, en de databaserijen waarvan het bestand weg is. Alles wat in gebruik is op het moment van verwijderen, blijft behouden. Typ het aantal wezen om door te gaan:",
+  "gitea-orphans-delete-wrong-number": "Het getypte getal is niet het aantal wezen. Er is niets verwijderd."
 }

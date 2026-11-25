@@ -279,6 +279,7 @@
   "desktop-mode": "د ډېسکټاپ حالت",
   "mobile-mode": "د موبايل حالت",
   "mobile-desktop-toggle": "د موبايل او ډېسکټاپ حالتونو ترمنځ واړوئ",
+  "html4-html5-toggle": "د HTML4 او HTML5 لید ترمنځ واړوئ",
   "zoom-in": "لوی يې کړئ",
   "zoom-out": "کوچنی يې کړئ",
   "zoom-level": "د لويولو کچه",
@@ -850,6 +851,7 @@
   "export": "صادرول",
   "export-board": "تخته صادرول",
   "export-board-without-attachments": "له ضميمو پرته",
+  "export-board-without-archive": "له ارشيف شويو توکو پرته",
   "export-ical-feed": "جنتري (iCal)",
   "user-can-not-export-excel": "کاروونکی Excel ته صادرول نه شي کولی",
   "export-card": "کارت صادر کړئ",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "ړنګ شو",
   "gitea-freed": "خلاص شو",
   "gitea-deleted-list": "ړنګې شوې زیرمې",
-  "gitea-index-stale": "له یوه ړنګولو راهیسې زوړ: د سمو اندازو لپاره بیا اندازه کړئ."
+  "gitea-index-stale": "له یوه ړنګولو راهیسې زوړ: د سمو اندازو لپاره بیا اندازه کړئ.",
+  "gitea-db-migration-version": "د Gitea ډیټابیس د کډوالۍ نسخه",
+  "gitea-orphans-delete": "ټول یتیمان ړنګ کړئ",
+  "gitea-orphans-delete-confirm": "دا د Gitea له فولډر څخه د تل لپاره هغه یتیم فایلونه ړنګوي چې په ډیټابیس کې هېڅ شی یې نه کاروي، او د ډیټابیس هغه قطارونه چې فایل یې ورک شوی دی. هر هغه شی چې د ړنګولو پر مهال په کار وي، ساتل کېږي. د دوام لپاره د یتیمانو شمېر ولیکئ:",
+  "gitea-orphans-delete-wrong-number": "لیکل شوی شمېر د یتیمانو شمېر نه دی. هېڅ شی ړنګ نه شو."
 }

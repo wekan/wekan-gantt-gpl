@@ -279,6 +279,7 @@
   "desktop-mode": "Mode bureau",
   "mobile-mode": "Mode mobile",
   "mobile-desktop-toggle": "Basculer entre le mode mobile et le mode bureau",
+  "html4-html5-toggle": "Basculer entre la vue HTML4 et la vue HTML5",
   "zoom-in": "Agrandir",
   "zoom-out": "Réduire",
   "zoom-level": "Niveau d'agrandissement",
@@ -850,6 +851,7 @@
   "export": "Exporter",
   "export-board": "Exporter le tableau",
   "export-board-without-attachments": "sans les pièces jointes",
+  "export-board-without-archive": "sans les éléments archivés",
   "export-ical-feed": "Calendrier (iCal)",
   "user-can-not-export-excel": "L'utilisateur ne peut pas exporter vers Excel",
   "export-card": "Exporter la carte",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Supprimé le",
   "gitea-freed": "libérés",
   "gitea-deleted-list": "Dépôts supprimés",
-  "gitea-index-stale": "Obsolète depuis une suppression : mesurez à nouveau pour obtenir les tailles exactes."
+  "gitea-index-stale": "Obsolète depuis une suppression : mesurez à nouveau pour obtenir les tailles exactes.",
+  "gitea-db-migration-version": "Version de migration de la base de données Gitea",
+  "gitea-orphans-delete": "Supprimer tous les orphelins",
+  "gitea-orphans-delete-confirm": "Ceci supprime définitivement du dossier Gitea les fichiers orphelins que rien dans la base de données n'utilise et les lignes de la base de données dont le fichier a disparu. Tout ce qui est utilisé au moment de la suppression est conservé. Saisissez le nombre d'orphelins pour continuer :",
+  "gitea-orphans-delete-wrong-number": "Le nombre saisi n'est pas le nombre d'orphelins. Rien n'a été supprimé."
 }

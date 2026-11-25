@@ -279,6 +279,7 @@
   "desktop-mode": "Desktop Mode",
   "mobile-mode": "Mobile Mode",
   "mobile-desktop-toggle": "Toggle between Mobile and Desktop Mode",
+  "html4-html5-toggle": "Toggle between HTML4 and HTML5 view",
   "zoom-in": "Zoom In",
   "zoom-out": "Zoom Out",
   "zoom-level": "Zoom Level",
@@ -850,6 +851,7 @@
   "export": "Export",
   "export-board": "Export board",
   "export-board-without-attachments": "without attachments",
+  "export-board-without-archive": "without archived items",
   "export-ical-feed": "Calendar feed (iCal)",
   "user-can-not-export-excel": "User can not export Excel",
   "export-card": "Export card",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Deleted",
   "gitea-freed": "freed",
   "gitea-deleted-list": "Deleted repositories",
-  "gitea-index-stale": "Out of date since a deletion: measure again for exact sizes."
+  "gitea-index-stale": "Out of date since a deletion: measure again for exact sizes.",
+  "gitea-db-migration-version": "Gitea database migration version",
+  "gitea-orphans-delete": "Delete all orphans",
+  "gitea-orphans-delete-confirm": "This deletes for good, from the Gitea folder, the orphan files that nothing in the database uses and the database rows whose file is gone. Anything that is in use when it is deleted is kept. Type the number of orphans to go on:",
+  "gitea-orphans-delete-wrong-number": "The number typed is not the number of orphans. Nothing was deleted."
 }

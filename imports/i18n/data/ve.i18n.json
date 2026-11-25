@@ -279,6 +279,7 @@
   "desktop-mode": "Nḓila ya dekhisithopo",
   "mobile-mode": "Nḓila ya founu",
   "mobile-desktop-toggle": "Shandula vhukati ha nḓila ya founu na ya dekhisithopo",
+  "html4-html5-toggle": "Shandula vhukati ha mbonalo ya HTML4 na ya HTML5",
   "zoom-in": "Hulisa",
   "zoom-out": "Ṱhukhufhadza",
   "zoom-level": "Tshikalo tsha u hulisa",
@@ -850,6 +851,7 @@
   "export": "Bvisela nnḓa",
   "export-board": "Bvisela bodo nnḓa",
   "export-board-without-attachments": "hu si na zwo namaṱheliswaho",
+  "export-board-without-archive": "hu si na zwithu zwo vhulungwaho",
   "export-ical-feed": "Phakelo ya khalenda (iCal)",
   "user-can-not-export-excel": "Mushumisi ha koni u rumela nnḓa nga Excel",
   "export-card": "Bvisela khadi nnḓa",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Zwo bviswa",
   "gitea-freed": "zwo vhofhololwa",
   "gitea-deleted-list": "Vhuvhulungelo ho bviswaho",
-  "gitea-index-stale": "A zwi tsha vha zwa zwino u bva musi hu tshi bviswa: kalani hafhu u wana masaizi o teaho."
+  "gitea-index-stale": "A zwi tsha vha zwa zwino u bva musi hu tshi bviswa: kalani hafhu u wana masaizi o teaho.",
+  "gitea-db-migration-version": "Vesheni ya u pfulutshela database ya Gitea",
+  "gitea-orphans-delete": "Bvisa zwiswiswana zwoṱhe",
+  "gitea-orphans-delete-confirm": "Hezwi zwi bvisa tshoṱhe kha folodara ya Gitea faela dza zwiswiswana dzine a hu na tshithu kha database tshine tsha dzi shumisa, na mitalo ya database ine faela yayo ya xela. Tshiṅwe na tshiṅwe tshine tsha khou shumiswa musi tshi tshi bviswa tshi a vhulungwa. Thaiphani tshivhalo tsha zwiswiswana u bvela phanḓa:",
+  "gitea-orphans-delete-wrong-number": "Nomboro yo thaiphiwaho a si tshivhalo tsha zwiswiswana. A hu na tshe tsha bviswa."
 }

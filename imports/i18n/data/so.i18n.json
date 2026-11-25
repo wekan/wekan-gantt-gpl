@@ -279,6 +279,7 @@
   "desktop-mode": "Habka Kombiyuutarka",
   "mobile-mode": "Habka Moobilka",
   "mobile-desktop-toggle": "U kala beddel Habka Moobilka iyo Kombiyuutarka",
+  "html4-html5-toggle": "U kala beddel muuqaalka HTML4 iyo HTML5",
   "zoom-in": "Soo Dhowee",
   "zoom-out": "Ka Fogee",
   "zoom-level": "Heerka Dhoweynta",
@@ -850,6 +851,7 @@
   "export": "Soo saar",
   "export-board": "Soo saar sabuuradda",
   "export-board-without-attachments": "lifaaqyo la'aan",
+  "export-board-without-archive": "walxaha la kaydiyay la'aan",
   "export-ical-feed": "Kalandar (iCal)",
   "user-can-not-export-excel": "Isticmaaluhu uma dhoofin karo Excel",
   "export-card": "Dhoofso kaarka",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "La tirtiray",
   "gitea-freed": "la xoreeyay",
   "gitea-deleted-list": "Kayd-xogeedyada la tirtiray",
-  "gitea-index-stale": "Duugoobay tan iyo tirtiris: mar kale cabbir si aad u hesho cabbirro sax ah."
+  "gitea-index-stale": "Duugoobay tan iyo tirtiris: mar kale cabbir si aad u hesho cabbirro sax ah.",
+  "gitea-db-migration-version": "Nooca guuritaanka kaydka xogta Gitea",
+  "gitea-orphans-delete": "Tirtir dhammaan agoomaha",
+  "gitea-orphans-delete-confirm": "Tani waxay si joogto ah uga tirtiraysaa galka Gitea faylasha agoonta ah ee aysan waxba kaydka xogta ku isticmaalin, iyo safafka kaydka xogta ee faylkoodii lumay. Wax kasta oo la isticmaalayo marka la tirtirayo waa la hayaa. Qor tirada agoomaha si aad u sii wadato:",
+  "gitea-orphans-delete-wrong-number": "Tirada la qoray ma aha tirada agoomaha. Waxba lama tirtirin."
 }

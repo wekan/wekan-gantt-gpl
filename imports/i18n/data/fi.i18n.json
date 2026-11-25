@@ -279,6 +279,7 @@
   "desktop-mode": "Työpöytätila",
   "mobile-mode": "Mobiilitila",
   "mobile-desktop-toggle": "Vaihda mobiili- ja työpöytätilan välillä",
+  "html4-html5-toggle": "Vaihda HTML4- ja HTML5-näkymän välillä",
   "zoom-in": "Lähennä",
   "zoom-out": "Loitonna",
   "zoom-level": "Zoomaus taso",
@@ -850,6 +851,7 @@
   "export": "Vie",
   "export-board": "Vie taulu",
   "export-board-without-attachments": "ilman liitetiedostoja",
+  "export-board-without-archive": "ilman arkistoituja kohteita",
   "export-ical-feed": "Kalenteri (iCal)",
   "user-can-not-export-excel": "Käyttäjä ei voi viedä Excel tiedostoon",
   "export-card": "Vie kortti",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Poistettu",
   "gitea-freed": "vapautettu",
   "gitea-deleted-list": "Poistetut repositoriot",
-  "gitea-index-stale": "Vanhentunut poiston jälkeen: mittaa uudelleen saadaksesi tarkat koot."
+  "gitea-index-stale": "Vanhentunut poiston jälkeen: mittaa uudelleen saadaksesi tarkat koot.",
+  "gitea-db-migration-version": "Gitean tietokannan migraatioversio",
+  "gitea-orphans-delete": "Poista kaikki orvot",
+  "gitea-orphans-delete-confirm": "Tämä poistaa Gitea-kansiosta lopullisesti orvot tiedostot, joita mikään tietokannassa ei käytä, ja tietokannan rivit, joiden tiedosto puuttuu. Se, mikä on poistohetkellä käytössä, säilytetään. Jatka kirjoittamalla orpojen määrä:",
+  "gitea-orphans-delete-wrong-number": "Kirjoitettu luku ei ole orpojen määrä. Mitään ei poistettu."
 }

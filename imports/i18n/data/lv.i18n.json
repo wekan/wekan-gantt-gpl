@@ -279,6 +279,7 @@
   "desktop-mode": "Darbvirsmas režīms",
   "mobile-mode": "Mobilais režīms",
   "mobile-desktop-toggle": "Pārslēgt mobilo vai darbvirsmas režīmu",
+  "html4-html5-toggle": "Pārslēgt HTML4 vai HTML5 skatu",
   "zoom-in": "Tuvināt",
   "zoom-out": "Tālināt",
   "zoom-level": "Tālummaiņas līmenis",
@@ -850,6 +851,7 @@
   "export": "Eksportēt",
   "export-board": "Eksportēt dēli",
   "export-board-without-attachments": "bez pielikumiem",
+  "export-board-without-archive": "bez arhivētiem vienumiem",
   "export-ical-feed": "Kalendārs (iCal)",
   "user-can-not-export-excel": "Lietotājs nevar eksportēt uz Excel",
   "export-card": "Eksportēt kartiņu",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Dzēsts",
   "gitea-freed": "atbrīvoti",
   "gitea-deleted-list": "Dzēstie repozitoriji",
-  "gitea-index-stale": "Novecojis kopš dzēšanas: izmēriet vēlreiz, lai iegūtu precīzus izmērus."
+  "gitea-index-stale": "Novecojis kopš dzēšanas: izmēriet vēlreiz, lai iegūtu precīzus izmērus.",
+  "gitea-db-migration-version": "Gitea datubāzes migrācijas versija",
+  "gitea-orphans-delete": "Dzēst visus bāreņus",
+  "gitea-orphans-delete-confirm": "Šis neatgriezeniski dzēš no Gitea mapes bāreņu failus, kurus nekas datubāzē neizmanto, un datubāzes rindas, kuru fails ir pazudis. Viss, kas dzēšanas brīdī tiek izmantots, tiek saglabāts. Ierakstiet bāreņu skaitu, lai turpinātu:",
+  "gitea-orphans-delete-wrong-number": "Ierakstītais skaitlis nav bāreņu skaits. Nekas netika dzēsts."
 }

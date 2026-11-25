@@ -279,6 +279,7 @@
   "desktop-mode": "Ordinatɛri cogoya",
   "mobile-mode": "Telefɔni cogoya",
   "mobile-desktop-toggle": "Yɛlɛma Telefɔni ni Ordinatɛri cogoya cɛ",
+  "html4-html5-toggle": "Yɛlɛma HTML4 ni HTML5 yecogo cɛ",
   "zoom-in": "A bonya",
   "zoom-out": "A dɔgɔya",
   "zoom-level": "Bonya hakɛ",
@@ -850,6 +851,7 @@
   "export": "Labɔ",
   "export-board": "Walan bɔ kɛnɛma",
   "export-board-without-attachments": "ɲɔgɔnnanw tɛ a la",
+  "export-board-without-archive": "fɛn maralenw tɛ a la",
   "export-ical-feed": "Donw kalandiriye (iCal)",
   "user-can-not-export-excel": "Baarakɛla tɛ se ka Excel labɔ",
   "export-card": "Karata labɔ",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "A jɔsira",
   "gitea-freed": "labɔra",
   "gitea-deleted-list": "Dosye marayɔrɔ jɔsilenw",
-  "gitea-index-stale": "A kɔrɔla kabini jɔsili dɔ: a suman tugun walasa ka bonya tigitigi sɔrɔ."
+  "gitea-index-stale": "A kɔrɔla kabini jɔsili dɔ: a suman tugun walasa ka bonya tigitigi sɔrɔ.",
+  "gitea-db-migration-version": "Gitea kunnafonimarayɔrɔ yɛlɛmali jɔyɔrɔ",
+  "gitea-orphans-delete": "Falentɔw bɛɛ jɔsi",
+  "gitea-orphans-delete-confirm": "Nin bɛ falentɔ sɛbɛnw jɔsi Gitea dosye la fo abada, minnu tɛ baara la kunnafonimarayɔrɔ fɛn si fɛ, ani kunnafonimarayɔrɔ cogoyaw minnu ka sɛbɛn tununna. Fɛn o fɛn bɛ baara la jɔsili waati la, o bɛ mara. Falentɔw hakɛ sɛbɛn walasa ka taa a fɛ:",
+  "gitea-orphans-delete-wrong-number": "Jate sɛbɛnnen tɛ falentɔw hakɛ ye. Foyi ma jɔsi."
 }

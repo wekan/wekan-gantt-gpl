@@ -279,6 +279,7 @@
   "desktop-mode": "Modalitât desktop",
   "mobile-mode": "Modalitât mobil",
   "mobile-desktop-toggle": "Passe tra modalitât mobil e desktop",
+  "html4-html5-toggle": "Passe tra visualizazion HTML4 e HTML5",
   "zoom-in": "Ingrandìs",
   "zoom-out": "Ridûs",
   "zoom-level": "Nivel di zoom",
@@ -850,6 +851,7 @@
   "export": "Espuarte",
   "export-board": "Espuarte la taule",
   "export-board-without-attachments": "senza zontis",
+  "export-board-without-archive": "senze elements archiviâts",
   "export-ical-feed": "Flus dal calendari (iCal)",
   "user-can-not-export-excel": "L'utent no può effettuare l'espuartezione in Excel",
   "export-card": "Espuarte cjarte",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Eliminât",
   "gitea-freed": "liberâts",
   "gitea-deleted-list": "Depuesits eliminâts",
-  "gitea-index-stale": "No inzornât di une eliminazion: misure di gnûf pes dimensions precisis."
+  "gitea-index-stale": "No inzornât di une eliminazion: misure di gnûf pes dimensions precisis.",
+  "gitea-db-migration-version": "Version di migrazion de base di dâts di Gitea",
+  "gitea-orphans-delete": "Elimine ducj i orfins",
+  "gitea-orphans-delete-confirm": "Chest al elimine par simpri de cartele di Gitea i files orfins che nuie te base di dâts al dopre e lis riis de base di dâts che il lôr file nol è plui. Dut ce che al è in ûs cuant che al ven eliminât al ven tignût. Scrîf il numar dai orfins par lâ indevant:",
+  "gitea-orphans-delete-wrong-number": "Il numar scrit nol è il numar dai orfins. Nuie al è stât eliminât."
 }

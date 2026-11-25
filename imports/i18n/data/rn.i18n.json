@@ -279,6 +279,7 @@
   "desktop-mode": "Uburyo bwa mudasobwa",
   "mobile-mode": "Uburyo bwa telefone",
   "mobile-desktop-toggle": "Hinduranya hagati y'uburyo bwa telefone n'ubwa mudasobwa",
+  "html4-html5-toggle": "Hinduranya hagati y'ukwerekana kwa HTML4 n'ukwa HTML5",
   "zoom-in": "Kwegera",
   "zoom-out": "Kwigiza kure",
   "zoom-level": "Urugero rwo kwegera",
@@ -850,6 +851,7 @@
   "export": "Sohora",
   "export-board": "Sohora icapa",
   "export-board-without-attachments": "ata vyometse",
+  "export-board-without-archive": "ata bintu vyabitswe",
   "export-ical-feed": "Ikirangamisi (iCal)",
   "user-can-not-export-excel": "Uwukoresha ntashobora gusohora muri Excel",
   "export-card": "Sohora ikarata",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Vyafuswe",
   "gitea-freed": "vyarekuwe",
   "gitea-deleted-list": "Ububiko bwafuswe",
-  "gitea-index-stale": "Ntibigezweho kuva habaye ugufuta: subira upime kugira ubone ubunini nyabwo."
+  "gitea-index-stale": "Ntibigezweho kuva habaye ugufuta: subira upime kugira ubone ubunini nyabwo.",
+  "gitea-db-migration-version": "Verisiyo y'iyimurwa ry'ububiko bw'amakuru bwa Gitea",
+  "gitea-orphans-delete": "Futa impfuvyi zose",
+  "gitea-orphans-delete-confirm": "Ivyo bifuta burundu mu bubiko bwa Gitea amadosiye y'impfuvyi ata kintu na kimwe co mu bubiko bw'amakuru gikoresha, n'imirongo y'ububiko bw'amakuru yatakaje idosiye yayo. Ikintu cose gikoreshwa igihe gifutwa kirabikwa. Andika igitigiri c'impfuvyi kugira ngo ubandanye:",
+  "gitea-orphans-delete-wrong-number": "Igitigiri wanditse si igitigiri c'impfuvyi. Nta kintu cafuswe."
 }

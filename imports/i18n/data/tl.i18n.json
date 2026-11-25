@@ -279,6 +279,7 @@
   "desktop-mode": "Mode na desktop",
   "mobile-mode": "Selpon Mode",
   "mobile-desktop-toggle": "Toggle between Selpon at Mode na desktop",
+  "html4-html5-toggle": "Lumipat sa pagitan ng HTML4 at HTML5 na tanaw",
   "zoom-in": "Pag-zoom Sa",
   "zoom-out": "Pag-zoom Out",
   "zoom-level": "Pag-zoom Antas",
@@ -850,6 +851,7 @@
   "export": "I-export",
   "export-board": "I-export ang pisara",
   "export-board-without-attachments": "nang walang kalakips",
+  "export-board-without-archive": "nang walang mga naka-archive na item",
   "export-ical-feed": "Kalendaryo (iCal)",
   "user-can-not-export-excel": "Gumagamit maaaring hindi i-export Excel",
   "export-card": "I-export kard",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Binura",
   "gitea-freed": "napalaya",
   "gitea-deleted-list": "Mga binurang repository",
-  "gitea-index-stale": "Luma na mula nang may binura: sukatin muli para sa eksaktong laki."
+  "gitea-index-stale": "Luma na mula nang may binura: sukatin muli para sa eksaktong laki.",
+  "gitea-db-migration-version": "Bersyon ng migration ng database ng Gitea",
+  "gitea-orphans-delete": "Burahin ang lahat ng ulila",
+  "gitea-orphans-delete-confirm": "Permanenteng binubura nito mula sa folder ng Gitea ang mga ulilang file na hindi ginagamit ng anuman sa database, at ang mga row ng database na nawawala na ang file. Ang anumang ginagamit sa oras na binubura ito ay pinananatili. I-type ang bilang ng mga ulila para magpatuloy:",
+  "gitea-orphans-delete-wrong-number": "Ang na-type na numero ay hindi ang bilang ng mga ulila. Walang binura."
 }

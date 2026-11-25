@@ -279,6 +279,7 @@
   "desktop-mode": "Imodi yedeskithophu",
   "mobile-mode": "Imodi yeselula",
   "mobile-desktop-toggle": "Guqula phakathi kweModi Yeselula neyedeskithophu",
+  "html4-html5-toggle": "Guqula phakathi kokubuka kwe-HTML4 nokwe-HTML5",
   "zoom-in": "Sondeza",
   "zoom-out": "Hlehlisa",
   "zoom-level": "Ileveli yokusondeza",
@@ -850,6 +851,7 @@
   "export": "Thumela ngaphandle",
   "export-board": "Ibhodi lokuthekelisa",
   "export-board-without-attachments": "ngaphandle kokunamathiselwe",
+  "export-board-without-archive": "ngaphandle kwezinto ezifakwe kungobo yomlando",
   "export-ical-feed": "Ikhalenda (iCal)",
   "user-can-not-export-excel": "Umsebenzisi akakwazi ukuthekelisa i-Excel",
   "export-card": "Khipha ikhadi",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Isusiwe",
   "gitea-freed": "kukhululiwe",
   "gitea-deleted-list": "Izindawo zokugcina ezisusiwe",
-  "gitea-index-stale": "Akusesona esamanje kusukela kususwa: linganisa futhi ukuze uthole osayizi abaqondile."
+  "gitea-index-stale": "Akusesona esamanje kusukela kususwa: linganisa futhi ukuze uthole osayizi abaqondile.",
+  "gitea-db-migration-version": "Inguqulo yokufuduswa kwesizindalwazi se-Gitea",
+  "gitea-orphans-delete": "Susa zonke izintandane",
+  "gitea-orphans-delete-confirm": "Lokhu kususa unomphela kufolda ye-Gitea amafayela ayizintandane okungekho lutho kusizindalwazi oluwasebenzisayo, kanye nemigqa yesizindalwazi elahlekelwe ifayela layo. Noma yini esetshenziswayo ngesikhathi isuswa iyagcinwa. Thayipha inani lezintandane ukuze uqhubeke:",
+  "gitea-orphans-delete-wrong-number": "Inombolo ethayiphiwe akulona inani lezintandane. Akukho okususiwe."
 }

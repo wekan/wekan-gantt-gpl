@@ -279,6 +279,7 @@
   "desktop-mode": "Mbaydi ordinateer",
   "mobile-mode": "Mbaydi cinndel",
   "mobile-desktop-toggle": "Waylu hakkunde mbaydi cinndel e ordinateer",
+  "html4-html5-toggle": "Waylu hakkunde jiytol HTML4 e HTML5",
   "zoom-in": "Mawnin",
   "zoom-out": "Ustu",
   "zoom-level": "Ɓeydugol mawnude",
@@ -850,6 +851,7 @@
   "export": "Yaltin",
   "export-board": "Yaltin alluwal",
   "export-board-without-attachments": "tawa alaa ceŋaaɗi",
+  "export-board-without-archive": "tawa alaa geɗe mooftaaɗe",
   "export-ical-feed": "Haatumeere (iCal)",
   "user-can-not-export-excel": "Kuutoro waawaa yaltinde Excel",
   "export-card": "Yaltin kartal",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Momtaama",
   "gitea-freed": "rimɗinaama",
   "gitea-deleted-list": "Mooftorde kod momtaaɗe",
-  "gitea-index-stale": "Ɓooyi gila momtagol: betu kadi ngam mawneeje goonga."
+  "gitea-index-stale": "Ɓooyi gila momtagol: betu kadi ngam mawneeje goonga.",
+  "gitea-db-migration-version": "Yamre eggitgol mooftorde keɓe Gitea",
+  "gitea-orphans-delete": "Momtu baanɗi ɗi fof",
+  "gitea-orphans-delete-confirm": "Ɗum momtata haa abada e runngere Gitea fiilde baanɗe ɗe hay huunde e nder mooftorde keɓe huutortaa, e daa mooftorde keɓe ɗe fiilde mum'en majjii. Kala ko huutoraa tuma nde momtetee ina mooftee. Winndu limoore baanɗi ngam jokkude:",
+  "gitea-orphans-delete-wrong-number": "Limoore winndaande nde wonaa limoore baanɗi. Hay huunde momtaaka."
 }

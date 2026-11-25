@@ -279,6 +279,7 @@
   "desktop-mode": "Modo da scritorio",
   "mobile-mode": "Modo da tełefonin",
   "mobile-desktop-toggle": "Pasa tra el modo da tełefonin e el modo da scritorio",
+  "html4-html5-toggle": "Pasa tra ła vista HTML4 e ła vista HTML5",
   "zoom-in": "Ingrandisi",
   "zoom-out": "Inpicenisi",
   "zoom-level": "Liveło de zoom",
@@ -850,6 +851,7 @@
   "export": "Esporta",
   "export-board": "Esporta el quadro",
   "export-board-without-attachments": "sensa ałegati",
+  "export-board-without-archive": "sensa elementi archivià",
   "export-ical-feed": "Calendario (iCal)",
   "user-can-not-export-excel": "El utente no el pol esportar Excel",
   "export-card": "Esporta ła scheda",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Scancełà",
   "gitea-freed": "liberài",
   "gitea-deleted-list": "Depòziti scancełài",
-  "gitea-index-stale": "No pì ajornà da na scancełasion: mezura da novo par dimension esate."
+  "gitea-index-stale": "No pì ajornà da na scancełasion: mezura da novo par dimension esate.",
+  "gitea-db-migration-version": "Version de migrasion del database de Gitea",
+  "gitea-orphans-delete": "Scancela tuti i orfani",
+  "gitea-orphans-delete-confirm": "Questo el scancèła par senpre da ła cartèła de Gitea i file orfani che gnente inte'l database el dòpara, e łe righe del database che'l so file no'l ghe xe pì. Tuto queło che xe in uso co'l vien scancełà el vien tegnù. Scrivi el nùmaro de orfani par ndar vanti:",
+  "gitea-orphans-delete-wrong-number": "El nùmaro scrito no'l xe el nùmaro de orfani. No xe stà scancełà gnente."
 }

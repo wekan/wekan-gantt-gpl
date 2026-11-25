@@ -279,6 +279,7 @@
   "desktop-mode": "Mod desktop",
   "mobile-mode": "Mod mobil",
   "mobile-desktop-toggle": "Comută între modul mobil și modul desktop",
+  "html4-html5-toggle": "Comută între vizualizarea HTML4 și vizualizarea HTML5",
   "zoom-in": "Mărește",
   "zoom-out": "Micșorează",
   "zoom-level": "Nivel de zoom",
@@ -850,6 +851,7 @@
   "export": "Exportă",
   "export-board": "Exportă panoul",
   "export-board-without-attachments": "fără atașamente",
+  "export-board-without-archive": "fără elemente arhivate",
   "export-ical-feed": "Flux de calendar (iCal)",
   "user-can-not-export-excel": "Utilizatorul nu poate exporta în Excel",
   "export-card": "Exportă cardul",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Șters",
   "gitea-freed": "eliberați",
   "gitea-deleted-list": "Depozite șterse",
-  "gitea-index-stale": "Neactualizat de la o ștergere: măsurați din nou pentru dimensiuni exacte."
+  "gitea-index-stale": "Neactualizat de la o ștergere: măsurați din nou pentru dimensiuni exacte.",
+  "gitea-db-migration-version": "Versiunea de migrare a bazei de date Gitea",
+  "gitea-orphans-delete": "Șterge toți orfanii",
+  "gitea-orphans-delete-confirm": "Aceasta șterge definitiv din dosarul Gitea fișierele orfane pe care nimic din baza de date nu le folosește și rândurile din baza de date al căror fișier a dispărut. Tot ce este în uz în momentul ștergerii este păstrat. Tastați numărul de orfani pentru a continua:",
+  "gitea-orphans-delete-wrong-number": "Numărul tastat nu este numărul de orfani. Nu s-a șters nimic."
 }

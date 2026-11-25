@@ -279,6 +279,7 @@
   "desktop-mode": "Režim počítača",
   "mobile-mode": "Mobilný režim",
   "mobile-desktop-toggle": "Prepínať medzi mobilným režimom a režimom počítača",
+  "html4-html5-toggle": "Prepínať medzi zobrazením HTML4 a HTML5",
   "zoom-in": "Priblížiť",
   "zoom-out": "Oddialiť",
   "zoom-level": "Úroveň priblíženia",
@@ -850,6 +851,7 @@
   "export": "Exportovať",
   "export-board": "Exportovať nástenku",
   "export-board-without-attachments": "bez príloh",
+  "export-board-without-archive": "bez archivovaných položiek",
   "export-ical-feed": "Kalendárový kanál (iCal)",
   "user-can-not-export-excel": "Používateľ nemôže exportovať do Excelu",
   "export-card": "Exportovať kartu",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Odstránené",
   "gitea-freed": "uvoľnených",
   "gitea-deleted-list": "Odstránené repozitáre",
-  "gitea-index-stale": "Neaktuálne od odstránenia: zmerajte znova pre presné veľkosti."
+  "gitea-index-stale": "Neaktuálne od odstránenia: zmerajte znova pre presné veľkosti.",
+  "gitea-db-migration-version": "Verzia migrácie databázy Gitea",
+  "gitea-orphans-delete": "Odstrániť všetky siroty",
+  "gitea-orphans-delete-confirm": "Týmto natrvalo odstránite z priečinka Gitea osirotené súbory, ktoré nič v databáze nepoužíva, a riadky databázy, ktorých súbor chýba. Všetko, čo sa v okamihu odstránenia používa, sa zachová. Pokračujte zadaním počtu sirôt:",
+  "gitea-orphans-delete-wrong-number": "Zadané číslo nie je počet sirôt. Nič nebolo odstránené."
 }

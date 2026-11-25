@@ -279,6 +279,7 @@
   "desktop-mode": " Skrivbordsläge",
   "mobile-mode": "Mobilläge",
   "mobile-desktop-toggle": " Växla mellan mobilläge och skrivbordsläge",
+  "html4-html5-toggle": "Växla mellan HTML4-vy och HTML5-vy",
   "zoom-in": "Zooma in",
   "zoom-out": "Zooma ut",
   "zoom-level": "Zoomnivå",
@@ -850,6 +851,7 @@
   "export": "Exportera",
   "export-board": "Exportera tavla",
   "export-board-without-attachments": "utan bilagor",
+  "export-board-without-archive": "utan arkiverade objekt",
   "export-ical-feed": "Kalender (iCal)",
   "user-can-not-export-excel": "Användare kan inte exportera till Excel",
   "export-card": "Exportera kort",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Borttagen",
   "gitea-freed": "frigjort",
   "gitea-deleted-list": "Borttagna utvecklingskataloger",
-  "gitea-index-stale": "Inaktuellt sedan en borttagning: mät igen för exakta storlekar."
+  "gitea-index-stale": "Inaktuellt sedan en borttagning: mät igen för exakta storlekar.",
+  "gitea-db-migration-version": "Migreringsversion för Gitea-databasen",
+  "gitea-orphans-delete": "Ta bort alla föräldralösa",
+  "gitea-orphans-delete-confirm": "Detta tar för gott bort från Gitea-mappen de föräldralösa filer som ingenting i databasen använder och de databasrader vars fil är borta. Allt som används när det tas bort behålls. Skriv antalet föräldralösa för att fortsätta:",
+  "gitea-orphans-delete-wrong-number": "Det inskrivna talet är inte antalet föräldralösa. Inget togs bort."
 }

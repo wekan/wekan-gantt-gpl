@@ -279,6 +279,7 @@
   "desktop-mode": "Skjáborðsstilling",
   "mobile-mode": "Farsímastilling",
   "mobile-desktop-toggle": "Skipta milli farsíma- og skjáborðsstillingar",
+  "html4-html5-toggle": "Skipta milli HTML4- og HTML5-sýnar",
   "zoom-in": "Þysja inn",
   "zoom-out": "Þysja út",
   "zoom-level": "Þysjunarstig",
@@ -850,6 +851,7 @@
   "export": "Flytja út",
   "export-board": "Flytja töflu út",
   "export-board-without-attachments": "án viðhengja",
+  "export-board-without-archive": "án atriða í safni",
   "export-ical-feed": "Dagatal (iCal)",
   "user-can-not-export-excel": "Notandi getur ekki flutt út í Excel",
   "export-card": "Flytja spjald út",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Eytt",
   "gitea-freed": "losað",
   "gitea-deleted-list": "Eydd hugbúnaðarsöfn",
-  "gitea-index-stale": "Úrelt síðan eyðing var gerð: mældu aftur fyrir nákvæmar stærðir."
+  "gitea-index-stale": "Úrelt síðan eyðing var gerð: mældu aftur fyrir nákvæmar stærðir.",
+  "gitea-db-migration-version": "Flutningsútgáfa Gitea-gagnagrunnsins",
+  "gitea-orphans-delete": "Eyða öllum munaðarleysingjum",
+  "gitea-orphans-delete-confirm": "Þetta eyðir fyrir fullt og allt úr Gitea-möppunni munaðarlausum skrám sem ekkert í gagnagrunninum notar og röðum í gagnagrunninum sem hafa misst skrána sína. Öllu sem er í notkun þegar því er eytt er haldið. Sláðu inn fjölda munaðarleysingja til að halda áfram:",
+  "gitea-orphans-delete-wrong-number": "Talan sem var slegin inn er ekki fjöldi munaðarleysingja. Engu var eytt."
 }

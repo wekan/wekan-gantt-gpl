@@ -279,6 +279,7 @@
   "desktop-mode": "Mudalità desktop",
   "mobile-mode": "Mudalità mòbbili",
   "mobile-desktop-toggle": "Alterna tra modalità mobili e desktop",
+  "html4-html5-toggle": "Alterna tra vista HTML4 e HTML5",
   "zoom-in": "Ingrannisci",
   "zoom-out": "Riduci",
   "zoom-level": "Livellu di zoom",
@@ -850,6 +851,7 @@
   "export": "Spurta",
   "export-board": "Spurtari a tavula",
   "export-board-without-attachments": "senza alligati",
+  "export-board-without-archive": "senza elementi archiviati",
   "export-ical-feed": "Calannariu (iCal)",
   "user-can-not-export-excel": "L'utenti nun pò fari l'esportazzioni n Excel",
   "export-card": "Spurta carta",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Cancillatu",
   "gitea-freed": "libbirati",
   "gitea-deleted-list": "Dipòsiti cancillati",
-  "gitea-index-stale": "Nun aggiurnatu di quannu ci fu na cancillazzioni: misura arrè pi granni esatti."
+  "gitea-index-stale": "Nun aggiurnatu di quannu ci fu na cancillazzioni: misura arrè pi granni esatti.",
+  "gitea-db-migration-version": "Virsioni di migrazzioni dâ basi di dati di Gitea",
+  "gitea-orphans-delete": "Cancella tutti li òrfani",
+  "gitea-orphans-delete-confirm": "Chistu cancella pi sempri dâ cartedda di Gitea li file òrfani ca nenti ntâ basi di dati usa, e li righi dâ basi di dati ca lu so file nun c'è cchiù. Tuttu chiddu ca è n'usu quannu si cancella si teni. Scrivi lu nùmmiru di òrfani pi jiri avanti:",
+  "gitea-orphans-delete-wrong-number": "Lu nùmmiru scrittu nun è lu nùmmiru di òrfani. Nun fu cancillatu nenti."
 }

@@ -279,6 +279,7 @@
   "desktop-mode": "Mokgwa wa khomphutha",
   "mobile-mode": "Mokgwa wa sellathekeng",
   "mobile-desktop-toggle": "Fetofetola magareng ga mokgwa wa sellathekeng le wa khomphutha",
+  "html4-html5-toggle": "Fetofetola magareng ga pono ya HTML4 le ya HTML5",
   "zoom-in": "Godiša pono",
   "zoom-out": "Fokotša pono",
   "zoom-level": "Tekanyo ya kgodišo",
@@ -850,6 +851,7 @@
   "export": "Romela",
   "export-board": "Ntšha poto",
   "export-board-without-attachments": "ntle le dikgokaganywa",
+  "export-board-without-archive": "ntle le dilo tše di bolokilwego",
   "export-ical-feed": "Khalentara (iCal)",
   "user-can-not-export-excel": "Modiriši a ka se ntšhe Excel",
   "export-card": "Ntšha karata",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "E phumotšwe",
   "gitea-freed": "e lokolotšwe",
   "gitea-deleted-list": "Direpository tše di phumotšwego",
-  "gitea-index-stale": "E tšofetše go tloga ge go phumolwa: lekanya gape bakeng sa bogolo bjo bo nepagetšego."
+  "gitea-index-stale": "E tšofetše go tloga ge go phumolwa: lekanya gape bakeng sa bogolo bjo bo nepagetšego.",
+  "gitea-db-migration-version": "Phetolelo ya go huduga ga database ya Gitea",
+  "gitea-orphans-delete": "Phumola ditšhiwana ka moka",
+  "gitea-orphans-delete-confirm": "Se se phumola ka mo go sa felego go tšwa foltareng ya Gitea difaele tša ditšhiwana tšeo go se nago selo ka gare ga database seo se di šomišago, le methaladi ya database yeo faele ya yona e timetšego. Se sengwe le se sengwe seo se šomišwago ge se phumolwa se a bolokwa. Ngwala palo ya ditšhiwana go tšwela pele:",
+  "gitea-orphans-delete-wrong-number": "Nomoro yeo e ngwadilwego ga se palo ya ditšhiwana. Ga go selo seo se phumotšwego."
 }

@@ -279,6 +279,7 @@
   "desktop-mode": "Asztali mód",
   "mobile-mode": "Mobil mód",
   "mobile-desktop-toggle": "Váltás a mobil és az asztali mód között",
+  "html4-html5-toggle": "Váltás a HTML4 és a HTML5 nézet között",
   "zoom-in": "Nagyítás",
   "zoom-out": "Kicsinyítés",
   "zoom-level": "Nagyítási szint",
@@ -850,6 +851,7 @@
   "export": "Exportálás",
   "export-board": "Tábla exportálása",
   "export-board-without-attachments": "mellékletek nélkül",
+  "export-board-without-archive": "archivált elemek nélkül",
   "export-ical-feed": "Naptár (iCal)",
   "user-can-not-export-excel": "Felhasználó nem tud Excelbe exportálni",
   "export-card": "Kártya exportálása",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Törölve",
   "gitea-freed": "felszabadítva",
   "gitea-deleted-list": "Törölt tárolók",
-  "gitea-index-stale": "Egy törlés óta elavult: mérje újra a pontos méretekért."
+  "gitea-index-stale": "Egy törlés óta elavult: mérje újra a pontos méretekért.",
+  "gitea-db-migration-version": "A Gitea-adatbázis migrációs verziója",
+  "gitea-orphans-delete": "Összes árva törlése",
+  "gitea-orphans-delete-confirm": "Ez véglegesen törli a Gitea mappából azokat az árva fájlokat, amelyeket semmi sem használ az adatbázisban, és azokat az adatbázissorokat, amelyek fájlja eltűnt. Ami a törlés pillanatában használatban van, megmarad. A folytatáshoz írja be az árvák számát:",
+  "gitea-orphans-delete-wrong-number": "A beírt szám nem az árvák száma. Semmi sem lett törölve."
 }

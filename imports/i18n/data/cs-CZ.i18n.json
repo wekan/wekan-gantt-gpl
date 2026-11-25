@@ -279,6 +279,7 @@
   "desktop-mode": "Režim počítače",
   "mobile-mode": "Mobilní režim",
   "mobile-desktop-toggle": "Přepnout mezi mobilním režimem a režimem počítače",
+  "html4-html5-toggle": "Přepnout mezi zobrazením HTML4 a HTML5",
   "zoom-in": "Přiblížit",
   "zoom-out": "Oddálit",
   "zoom-level": "Úroveň přiblížení",
@@ -850,6 +851,7 @@
   "export": "Exportovat",
   "export-board": "Exportovat tablo",
   "export-board-without-attachments": "bez příloh",
+  "export-board-without-archive": "bez archivovaných položek",
   "export-ical-feed": "Kalendář (iCal)",
   "user-can-not-export-excel": "Uživatel nemůže exportovat do Excelu",
   "export-card": "Exportovat kartu",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Smazáno",
   "gitea-freed": "uvolněno",
   "gitea-deleted-list": "Smazané repozitáře",
-  "gitea-index-stale": "Zastaralé od smazání: změřte znovu pro přesné velikosti."
+  "gitea-index-stale": "Zastaralé od smazání: změřte znovu pro přesné velikosti.",
+  "gitea-db-migration-version": "Verze migrace databáze Gitea",
+  "gitea-orphans-delete": "Smazat všechny sirotky",
+  "gitea-orphans-delete-confirm": "Tímto se ze složky Gitea natrvalo smažou osiřelé soubory, které nic v databázi nepoužívá, a řádky databáze, jejichž soubor chybí. Cokoli, co se v okamžiku mazání používá, zůstane zachováno. Pro pokračování napište počet sirotků:",
+  "gitea-orphans-delete-wrong-number": "Napsané číslo není počet sirotků. Nic nebylo smazáno."
 }

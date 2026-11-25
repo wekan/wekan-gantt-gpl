@@ -279,6 +279,7 @@
   "desktop-mode": "የዴስክቶፕ ሁኔታ",
   "mobile-mode": "የሞባይል ሁኔታ",
   "mobile-desktop-toggle": "በሞባይልና በዴስክቶፕ ሁኔታ መካከል ቀያይር",
+  "html4-html5-toggle": "በHTML4 እና በHTML5 እይታ መካከል ቀያይር",
   "zoom-in": "አጉላ",
   "zoom-out": "አሳንስ",
   "zoom-level": "የማጉላት ደረጃ",
@@ -850,6 +851,7 @@
   "export": "ላክ",
   "export-board": "ሰሌዳ ላክ",
   "export-board-without-attachments": "ያለ አባሪዎች",
+  "export-board-without-archive": "ያለ ማህደር ንጥሎች",
   "export-ical-feed": "የቀን መቁጠሪያ (iCal)",
   "user-can-not-export-excel": "ተጠቃሚው ወደ Excel መላክ አይችልም",
   "export-card": "ካርድን ወደ ውጭ ላክ",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "ተሰርዟል",
   "gitea-freed": "ተለቋል",
   "gitea-deleted-list": "የተሰረዙ ማከማቻዎች",
-  "gitea-index-stale": "ከአንድ ስረዛ በኋላ ጊዜው ያለፈበት ነው: ለትክክለኛ መጠኖች እንደገና ለካ።"
+  "gitea-index-stale": "ከአንድ ስረዛ በኋላ ጊዜው ያለፈበት ነው: ለትክክለኛ መጠኖች እንደገና ለካ።",
+  "gitea-db-migration-version": "የGitea መረጃ ቋት የፍልሰት ስሪት",
+  "gitea-orphans-delete": "ሁሉንም ወላጅ አልባዎች ሰርዝ",
+  "gitea-orphans-delete-confirm": "ይህ በመረጃ ቋቱ ውስጥ ምንም የማይጠቀምባቸውን ወላጅ አልባ ፋይሎችና ፋይላቸው የጠፋባቸውን የመረጃ ቋት ረድፎች ከGitea አቃፊ ለዘለቄታው ይሰርዛል። በሚሰረዝበት ጊዜ በጥቅም ላይ ያለ ማንኛውም ነገር ይቀመጣል። ለመቀጠል የወላጅ አልባዎቹን ብዛት ይተይቡ:",
+  "gitea-orphans-delete-wrong-number": "የተተየበው ቁጥር የወላጅ አልባዎቹ ብዛት አይደለም። ምንም አልተሰረዘም።"
 }

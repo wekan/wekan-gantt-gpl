@@ -279,6 +279,7 @@
   "desktop-mode": "وضع سطح المكتب",
   "mobile-mode": "وضع الهاتف",
   "mobile-desktop-toggle": "التبديل بين وضع الهاتف ووضع سطح المكتب",
+  "html4-html5-toggle": "التبديل بين عرض HTML4 وعرض HTML5",
   "zoom-in": "تكبير",
   "zoom-out": "تصغير",
   "zoom-level": "مستوى التكبير",
@@ -850,6 +851,7 @@
   "export": "تصدير",
   "export-board": "تصدير اللوحة",
   "export-board-without-attachments": "بدون مرفقات",
+  "export-board-without-archive": "بدون العناصر المؤرشفة",
   "export-ical-feed": "التقويم (iCal)",
   "user-can-not-export-excel": "لا يمكن للمستخدم التصدير إلى Excel",
   "export-card": "تصدير البطاقة",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "حُذف",
   "gitea-freed": "حُرِّرت",
   "gitea-deleted-list": "المستودعات المحذوفة",
-  "gitea-index-stale": "قديم منذ عملية حذف: قِس مرة أخرى للحصول على الأحجام الدقيقة."
+  "gitea-index-stale": "قديم منذ عملية حذف: قِس مرة أخرى للحصول على الأحجام الدقيقة.",
+  "gitea-db-migration-version": "إصدار ترحيل قاعدة بيانات Gitea",
+  "gitea-orphans-delete": "حذف كل اليتامى",
+  "gitea-orphans-delete-confirm": "هذا يحذف نهائيًا من مجلد Gitea الملفات اليتيمة التي لا يستخدمها أي شيء في قاعدة البيانات، وصفوف قاعدة البيانات التي اختفى ملفها. أي شيء قيد الاستخدام وقت حذفه يُحتفظ به. اكتب عدد اليتامى للمتابعة:",
+  "gitea-orphans-delete-wrong-number": "العدد المكتوب ليس عدد اليتامى. لم يُحذف شيء."
 }

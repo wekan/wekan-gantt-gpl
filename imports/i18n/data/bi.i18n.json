@@ -279,6 +279,7 @@
   "desktop-mode": "Mod blong kompiuta",
   "mobile-mode": "Mod blong mobael",
   "mobile-desktop-toggle": "Jenisim bitwin Mod blong Mobael mo Mod blong Kompiuta",
+  "html4-html5-toggle": "Jenisim bitwin HTML4 lukluk mo HTML5 lukluk",
   "zoom-in": "Mekem i bigwan",
   "zoom-out": "Mekem i smolwan",
   "zoom-level": "Saes blong lukluk",
@@ -850,6 +851,7 @@
   "export": "Ekspotem",
   "export-board": "Sendem bod i go",
   "export-board-without-attachments": "we i no gat ol fael we oli joen",
+  "export-board-without-archive": "we i no gat ol samting we oli kipim",
   "export-ical-feed": "Fid blong kalenda (iCal)",
   "user-can-not-export-excel": "Yusa i no save karem i go long Excel",
   "export-card": "Karem i go kad",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "I diletem finis",
   "gitea-freed": "i fri",
   "gitea-deleted-list": "Ol repositori we oli diletem",
-  "gitea-index-stale": "I olfala finis afta wan diletem: mesarem bakegen blong kasem stret saes."
+  "gitea-index-stale": "I olfala finis afta wan diletem: mesarem bakegen blong kasem stret saes.",
+  "gitea-db-migration-version": "Migresen vesen blong database blong Gitea",
+  "gitea-orphans-delete": "Diletem evri samting we i no gat papa",
+  "gitea-orphans-delete-confirm": "Hemia i diletem olgeta long folda blong Gitea ol fael we i no gat papa we i no gat wan samting long database i yusum, mo ol laen long database we fael blong olgeta i lus. Eni samting we oli stap yusum taem oli diletem bambae i stap. Raetem namba blong ol samting we i no gat papa blong gohed:",
+  "gitea-orphans-delete-wrong-number": "Namba we yu raetem i no namba blong ol samting we i no gat papa. I no gat samting we i diletem."
 }

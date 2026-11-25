@@ -279,6 +279,7 @@
   "desktop-mode": "Modalità tad-desktop",
   "mobile-mode": "Modalità tal-mowbajl",
   "mobile-desktop-toggle": "Aqleb bejn il-Modalità Mobbli u l-Modalità tad-Desktop",
+  "html4-html5-toggle": "Aqleb bejn il-Veduta HTML4 u l-Veduta HTML5",
   "zoom-in": "Kabbar",
   "zoom-out": "Ċekken",
   "zoom-level": "Livell ta’ tkabbir",
@@ -850,6 +851,7 @@
   "export": "Esporta",
   "export-board": "Esporta l-bord",
   "export-board-without-attachments": "mingħajr annessi",
+  "export-board-without-archive": "mingħajr oġġetti arkivjati",
   "export-ical-feed": "Fluss tal-kalendarju (iCal)",
   "user-can-not-export-excel": "L-utent ma jistax jesporta f’Excel",
   "export-card": "Esporta l-karta",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Imħassar",
   "gitea-freed": "meħlusa",
   "gitea-deleted-list": "Repożitorji mħassra",
-  "gitea-index-stale": "Skadut minn tħassir: kejjel mill-ġdid għal daqsijiet eżatti."
+  "gitea-index-stale": "Skadut minn tħassir: kejjel mill-ġdid għal daqsijiet eżatti.",
+  "gitea-db-migration-version": "Verżjoni tal-migrazzjoni tad-database ta' Gitea",
+  "gitea-orphans-delete": "Ħassar l-orfni kollha",
+  "gitea-orphans-delete-confirm": "Dan iħassar għal dejjem mill-folder ta' Gitea l-fajls orfni li xejn fid-database ma juża, u r-ringieli tad-database li l-fajl tagħhom m'għadux hemm. Kull ma jkun qed jintuża meta jitħassar jinżamm. Ikteb l-għadd tal-orfni biex tkompli:",
+  "gitea-orphans-delete-wrong-number": "In-numru miktub mhuwiex l-għadd tal-orfni. Xejn ma tħassar."
 }

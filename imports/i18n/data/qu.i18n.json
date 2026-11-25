@@ -279,6 +279,7 @@
   "desktop-mode": "Hatun antawa rikch'ay",
   "mobile-mode": "Kuyuq antawa rikch'ay",
   "mobile-desktop-toggle": "Kuyuq antawa rikch'aymanta Hatun antawa rikch'ayman tikray",
+  "html4-html5-toggle": "HTML4 rikch'aymanta HTML5 rikch'ayman tikray",
   "zoom-in": "Hatunyachiy",
   "zoom-out": "Huch'uyyachiy",
   "zoom-level": "Hatunyachiy kaq",
@@ -850,6 +851,7 @@
   "export": "Hurquy",
   "export-board": "Pirqata lloqsichiy",
   "export-board-without-attachments": "mana watasqakunawan",
+  "export-board-without-archive": "mana waqaychasqa imakunawan",
   "export-ical-feed": "Watanqillqa willakuy (iCal)",
   "user-can-not-export-excel": "Runaqa manam Excelman hurquyta atinchu",
   "export-card": "Kartata hurquy",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Pichasqa",
   "gitea-freed": "kacharisqa",
   "gitea-deleted-list": "Pichasqa waqaychanakuna",
-  "gitea-index-stale": "Huk pichaymanta manaña musuqchu: yapamanta tupuy chiqan hatun kaykunapaq."
+  "gitea-index-stale": "Huk pichaymanta manaña musuqchu: yapamanta tupuy chiqan hatun kaykunapaq.",
+  "gitea-db-migration-version": "Gitea willakuy waqaychanapa astaynin versionnin",
+  "gitea-orphans-delete": "Llapan wakchakunata pichay",
+  "gitea-orphans-delete-confirm": "Kayqa wiñaypaq pichan Gitea q'epimanta wakcha willañiqikunata, mayqinkunatachus willakuy waqaychanapi mana imapas llamk'achinchu, willakuy waqaychanapa siq'ikunatapas, mayqinkunapachus willañiqin chinkarqan. Pichasqa kaptin llamk'achisqa kaq imapas waqaychasqa qhepan. Wakchakunap yupayninta qillqay qatinapaq:",
+  "gitea-orphans-delete-wrong-number": "Qillqasqa yupayqa mana wakchakunap yupayninchu. Mana imapas pichasqachu."
 }

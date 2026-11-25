@@ -279,6 +279,7 @@
   "desktop-mode": "Desktop Nkola",
   "mobile-mode": "Mobile Nkola",
   "mobile-desktop-toggle": "Toggle between Mobile ne Desktop Nkola",
+  "html4-html5-toggle": "Kyusa wakati w'endaba ya HTML4 ne HTML5",
   "zoom-in": "Zoom Mu",
   "zoom-out": "Kendeeza obunene",
   "zoom-level": "Obunene bw'okulaba",
@@ -850,6 +851,7 @@
   "export": "Fulumya",
   "export-board": "Fulumya olubaawo",
   "export-board-without-attachments": "awatali ebiyungiddwa",
+  "export-board-without-archive": "awatali bintu ebiterekeddwa",
   "export-ical-feed": "Kalenda ey'okugoberera (iCal)",
   "user-can-not-export-excel": "Mukozesa sobola si fulumya Excel",
   "export-card": "Fulumya kaadi",
@@ -5797,5 +5799,9 @@
   "gitea-deleted": "Kisaziddwamu",
   "gitea-freed": "kiteereddwa",
   "gitea-deleted-list": "Ebitereke ebisaziddwamu",
-  "gitea-index-stale": "Kikadde okuva ku kusazaamu: pima nate okufuna obunene obutuufu."
+  "gitea-index-stale": "Kikadde okuva ku kusazaamu: pima nate okufuna obunene obutuufu.",
+  "gitea-db-migration-version": "Enkyusa y'okusengula tterekero ly'ebikwata erya Gitea",
+  "gitea-orphans-delete": "Sangula bamulekwa bonna",
+  "gitea-orphans-delete-confirm": "Kino kisazaamu emirembe gyonna okuva mu kifo kya Gitea fayiro bamulekwa ezitakozesebwa kintu kyonna mu tterekero ly'ebikwata, n'ennyiriri z'omu tterekero ly'ebikwata ezibuzeeko fayiro zaazo. Buli kikozesebwa mu kiseera we kisazibwamu kikuumibwa. Wandiika omuwendo gwa bamulekwa okugenda mu maaso:",
+  "gitea-orphans-delete-wrong-number": "Ennamba ewandiikiddwa si gwe muwendo gwa bamulekwa. Tewali kisaziddwamu."
 }
