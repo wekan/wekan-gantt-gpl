@@ -96,6 +96,189 @@ Which databases WeKan supports
 
 </details>
 
+# v13.32 2026-11-25 WeKan ® release
+
+**In short:** Every bundle, snap and Docker image is **about 220 MiB
+smaller**: translations are one copy on the server, and neither a test build's
+files, the TypeScript compiler nor Azure's sign-in libraries ship any more.
+Languages that are a copy of another, such as en-IT, no longer fail on the
+server. Minicards are **compact again**, and their caret and menu can be
+hidden; the health checks survive odd data and a nightly **mongodump**. The
+Docker image's start no longer logs paths read
+from the environment, as **GitHub CodeQL** found, and the documentation says
+the license rule plainly: **permissive licenses, no GPL**.
+
+This release fixes the following SECURITY ISSUES found by GitHub CodeQL code scanning:
+
+**The Docker image** - what its start writes to the log.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/af2d29b293043b263577ca37815690b5d39dfcff">The entrypoint logs what happens in fixed words, with nothing read from the environment</a>. Thanks to GitHub CodeQL and xet7.</summary>
+
+CodeQL js/clear-text-logging, alerts 613-618, on
+`releases/ferretdb/wekan-entrypoint.mjs`, the Node.js entrypoint of the
+distroless image in v13.31: cpu-exec logged the CPU feature list of
+`WEKAN_REQUIRED_CPU_FEATURES`, the program's path and the qemu-user path, and
+recovery and the rotating backup logged the backup folder's path - all derived
+from the environment, which can hold secrets. Now cpu-exec names the
+architecture and the program (FerretDB, WeKan (node)), and recovery and backup
+say `backup/`, `backup/prev/` or `continuous-restore/` of the data folder.
+`tests/dockerEntrypoint.test.cjs` lists what a log line of the entrypoint may
+contain and fails on the old code. Nothing is recorded in Admin Panel /
+Problems: this changes what a log line carries, and there is no attempt to see.
+
+</details>
+
+and fixes the following bugs:
+
+**Release size** - what every bundle, zip, snap and image carries.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1cd1be72381b9136f00e34df3443336eabab906e">Translations are one copy, on the server, and a language that is a copy of another loads</a>. Thanks to xet7.</summary>
+
+Every dictionary but English was in the bundle twice: a server asset (140 MiB)
+and a client chunk (144 MiB). Now the browser's module for a language is only
+the dictionary's hash, and the browser fetches `/i18n/<hash>.json` from the
+server's copy, at the page's origin under ROOT_URL's path prefix, kept a year
+as private and immutable. The client part of the bundle is 41 MiB instead of
+184 MiB. The server's assets were named `<tag>.<hash>.json`, and the build kept
+one file per content, so where two dictionaries are the same bytes (en-IT,
+en-MY and en-YS are en-BR; en_SG, en_TR and en_ZA are en_AU) the server failed
+with ENOENT reading the others. Named by content alone, they share one file.
+Checked on a built bundle: a Finnish Chromium gets Finnish from the route.
+`tests/i18nAssetServing.test.cjs`, `tests/i18nServerAssets.test.cjs` and the
+Playwright spec `i18n-one-copy.e2e.js` pin it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/21b0131b8c0afb2334cdd8a8af90ea9a0155c834">A test build's client assets no longer ship in a release bundle, 16 MiB less</a>. Thanks to xet7.</summary>
+
+`meteor test` writes the test app's assets to
+`public/build-assets-local-test-app-test/`, and `public/` goes into every later
+build, so a bundle built after the tests carried them. `bundle-trim.mjs`, which
+every release path runs, drops them with their manifest entries.
+`tests/bundleTrim.test.cjs` pins it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/09424fd9ba8e9a2c2afc5d4031d931b4af837792">The TypeScript compiler no longer ships, 23 MiB less: it is named in the bundle and loaded nowhere</a>. Thanks to xet7.</summary>
+
+`releases/prune-unreachable-npm.mjs` had it in its policy and kept it anyway,
+because it counts every quoted package name as a reference: a language map's
+"typescript", the package.json files inlined into the server bundle, parser
+names and i18next's optional peer dependency. For typescript only a load now
+counts - `require()`, `import`, `import()`, `module.link()`, `Npm.require()`
+or a dependency - and any load still keeps it. The pruned bundle boots and
+passes the boards, cards and translations Playwright specs.
+`tests/pruneUnreachableNpm.test.cjs` pins both directions.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/de7b622960b7f471e173348bf999ef47364e2062">Azure Blob storage is WeKan's own adapter on @azure/storage-blob, without @azure/identity and MSAL, 36 MiB less</a>. Thanks to xet7.</summary>
+
+The package adapter loaded `@azure/identity` and the MSAL libraries for
+Microsoft Entra passwordless sign-in, which WeKan never uses: Admin Panel /
+Attachments always gives a connection string or an account key. The new
+`server/lib/azureBlobAdapter.js` takes the same settings and keeps the old
+answers. WeKan's login with Azure AD is OIDC and is not affected. The
+`@azure/msal-node` override for GHSA-xcx6-jx8p-x3h5 went with the package.
+`tests/azureBlobAdapter.test.cjs` runs it against Azurite, Microsoft's Azure
+Storage emulator; `tests/msalNodeAdvisory.test.cjs` pins that no MSAL package
+is locked.
+
+</details>
+
+**Minicards** - the caret and the menu at the top of every card.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f7c743313b0f21b30dabfeeb14cb5c1a864e99cb">The card actions menu can be hidden like the collapse caret, and the content takes its place</a>. Thanks to sirup and xet7.</summary>
+
+[#6943](https://github.com/wekan/wekan/issues/6943): the collapse caret
+already had a row in Board Settings / Card (Card, Show on Minicard: Collapse)
+and a tick in the Admin Panel's card fields; the menu had neither. Now it has
+both: the row Card Actions under Collapse, a board flag `allowsMinicardMenu`
+that a board which never chose reads as on, and the Admin Panel tick. Hiding
+section Card on the minicard hides both. With the menu hidden, the labels and
+custom fields no longer keep its 84px corner free. The opened card keeps its
+own menu. `tests/minicardControls6943.test.cjs` and
+`tests/playwright/specs/minicard-controls-6943.e2e.js` pin it.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/15bf9305025c32ac591e2d5c2f6d0c80d349eaf0">The 24px caret and menu no longer make every card taller</a>. Thanks to sirup and xet7.</summary>
+
+v13.31 gave both a 24 x 24 target (WCAG 2.2, 2.5.8). They float on the
+title's line, so every minicard grew by about 8px. A -4px block margin takes
+the height back out of the line, and the box that is clicked stays 24 x 24:
+the UI test measures the card the same height with and without them, and the
+axe scan still passes.
+
+</details>
+
+**Admin Panel / Problems** - the data and database health checks.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b32a736c62a9f84551885eb3c6f1edc7ec86872b">A user's emails or a card's custom fields that are not a list no longer end the data health scan</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[#6944](https://github.com/wekan/wekan/issues/6944): `u.emails || []` and
+`card.customFields || []` let a single object or a scalar from older or
+imported data through, and the first one ended the scan with "object is not
+iterable" - 30 of 31 checks never ran. Both are read through `asArray()` now,
+as the board members already were. `tests/dataHealth6818.test.cjs` scans such
+documents and finds every check run.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/8f27060b4ed2ccdf7ce1d4a58b46398d4a629fdf">A nightly mongodump no longer raises the documents per second problem</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+[#6945](https://github.com/wekan/wekan/issues/6945): `scannedObjects` counts
+every document read by anything, and a dump reads the whole database, so its
+interval went over the limit every morning, naming no query. The rate is
+reported now only when a collection scan in MongoDB's "Slow query" log of the
+same interval explains it, or the log cannot be read; and the scans of
+mongodump and mongoexport themselves, named by their appName, are no missing
+index. `tests/databaseHealthScans.test.cjs` pins both, with negative cases.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**Tests** - guards that read the source.
+
+- [The cpu-exec wiring guard reads the entrypoint's named programs](https://github.com/wekan/wekan/commit/524ea6a41e1e4eaa280df747547643b63ef003e2).
+  Thanks to xet7.
+- [The S3 encryption guard knows the Azure Blob adapter is not S3](https://github.com/wekan/wekan/commit/9f15776df80b7318efcab824154d329ed6916955).
+  Thanks to xet7.
+
+**Security downloads** - Artifact Hub's report of the Helm chart.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ca788de4d701905f7a2e91de9bc0daa0ee9a91e0">A chart version not scanned yet says so, and the newest scanned version is downloaded</a>. Thanks to xet7.</summary>
+
+Artifact Hub scans a new chart version some hours after it is published, and
+until then answers its security report with an empty body, which
+`releases/sec/download_artifacthub_security.py` reported as "the answer is not
+JSON". Now `status.txt` says the version is not scanned yet, and the newest
+scanned version is downloaded into `scanned-<version>/` beside it.
+`tests/securityDownloadArtifactHub.test.cjs` pins it.
+
+</details>
+
+and reorganises the documentation:
+
+**Licenses** - what WeKan accepts, in plain words.
+
+- [Permissive licenses only - MIT, BSD, ISC, Apache-2.0 and the like - and no GPL](https://github.com/wekan/wekan/commit/e30a3129bb3b57f5f9cb80961cbcdffaa0a9f059):
+  the Code of Conduct and the docs say it so; GPL is not used, since it would
+  turn the license of the whole program into GPL. Thanks to xet7.
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.31 2026-11-25 WeKan ® release
 
 **In short:** A person can **download everything WeKan holds about them**
