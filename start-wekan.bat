@@ -920,7 +920,27 @@ REM # EVENTLOG_RETENTION_DAYS: Days after which an Admin Panel / Problems event 
 REM SET EVENTLOG_RETENTION_DAYS=90
 REM # LOGIN_ADDRESS_RETENTION_DAYS: Days a sign-in address is kept on the account, in loginAddresses and in shortPasswordLogins after its last use. Default 365; 0 keeps them.
 REM SET LOGIN_ADDRESS_RETENTION_DAYS=365
-REM # Attachment retention, off unless set. See docs/Features/Cards/Attachments/Attachments.md
+REM # LOGIN_ADDRESS_RECORDED: false records no sign-in address at all: not on the account, not in the login reports. The lockout still counts failed sign-ins per address.
+REM SET LOGIN_ADDRESS_RECORDED=true
+REM # USERS_ANONYMIZE_INACTIVE_AFTER_DAYS: Days after an account was disabled for inactivity (USERS_DISABLE_INACTIVE_AFTER_DAYS) that it is anonymised, as Member Settings / Anonymize does. Off unless set; administrators are never anonymised.
+REM SET USERS_ANONYMIZE_INACTIVE_AFTER_DAYS=
+REM # REGISTRATION_MINIMUM_AGE: Ask "I am at least N years old" on the sign-up form and refuse a password sign-up without it (GDPR Art. 8: 16, or 13-16 where a country lowers it; COPPA: 13). Off unless set; no birth date is stored.
+REM SET REGISTRATION_MINIMUM_AGE=16
+REM # BACKUP_PASSPHRASE: Encrypt every Admin Panel backup with this passphrase (AES-256-GCM, at least 16 characters), on disk and in cloud storage; restoring one needs the same passphrase. Keep it somewhere other than the backups.
+REM SET BACKUP_PASSPHRASE=
+REM # ATTACHMENTS_PASSPHRASE: Lets Admin Panel / Attachments / Encrypt encrypt the attachments on this server's disk (at least 16 characters); their addresses stay the same. Without it, encrypted attachments cannot be read: keep it somewhere other than the server.
+REM SET ATTACHMENTS_PASSPHRASE=
+REM # ADMIN_AUDIT_RETENTION_DAYS: Days the administrators' audit log (Admin Panel / People / Audit log) is kept. Default 365; 0 keeps it; a HIPAA deployment sets 2190 or more.
+REM SET ADMIN_AUDIT_RETENTION_DAYS=365
+REM # AUDIT_LOG_STDOUT: Write every audit log row, security problem and data access also to standard output as one JSON line, for a SIEM. Off unless set to json.
+REM SET AUDIT_LOG_STDOUT=json
+REM # ACTIVITIES_RETENTION_DAYS: Days board activity rows are kept; off unless set. The change history of cards is never removed.
+REM SET ACTIVITIES_RETENTION_DAYS=
+REM # WORKLOAD_ABSENCE_RETENTION_DAYS: Days after its end a workload absence is kept; off unless set. Absences can be health data.
+REM SET WORKLOAD_ABSENCE_RETENTION_DAYS=
+REM # WORKLOAD_ABSENCE_TYPE_RECORDED: false stores every new workload absence as "other", so no sick leave is recorded.
+REM SET WORKLOAD_ABSENCE_TYPE_RECORDED=
+REM # Attachment retention, off unless set. See docs/Features/Cards/Attachments/README.md
 REM SET ATTACHMENTS_RETENTION_DAYS=730
 REM SET ATTACHMENTS_RETENTION_MODE=uploaded
 REM SET ATTACHMENTS_PURGE_DELETED_AFTER_DAYS=30

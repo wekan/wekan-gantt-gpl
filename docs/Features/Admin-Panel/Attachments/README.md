@@ -24,7 +24,7 @@ whether a backup is already running, so an in-progress backup shows its status.
 - [Data retention](https://en.wikipedia.org/wiki/Data_retention) on Wikipedia.
 - WeKan: [Backup and restore](../../../Backup/Backup.md),
   [Continuous backup](../../../Backup/Continuous-Backup.md) and
-  [Attachments (cards)](../../Cards/Attachments/Attachments.md).
+  [Attachments (cards)](../../Cards/Attachments/README.md).
 
 ## How to use it
 
@@ -104,7 +104,7 @@ works on any more, and remove deleted attachments for good after another number
 of days. Each field overrides its environment variable (`ATTACHMENTS_RETENTION_*`,
 and `ATTACHMENTS_PURGE_DELETED_AFTER_DAYS` for the purge); an empty field falls
 back to it. Off unless set. See
-[Attachments.md](../../Cards/Attachments/Attachments.md#retention-removing-old-attachments-automatically).
+[Attachments.md](../../Cards/Attachments/README.md#retention-removing-old-attachments-automatically).
 
 ### MongoDB GridFS storage · Filesystem storage · S3 / MinIO storage · Azure Blob Storage · Google Cloud Storage · WebDAV
 
@@ -142,7 +142,10 @@ See [Problems / Migrations](../Problems/Migrations.md).
   - The mode is `uploaded` unless `card-inactive` is chosen.
   - *Dry run* (`ATTACHMENTS_RETENTION_DRY_RUN`) is on for `true`, `1`, `yes`
     or `on`.
-  - *At most per run* (`ATTACHMENTS_RETENTION_MAX_PER_RUN`) defaults to 1000.
+  - *At most per run* (`ATTACHMENTS_RETENTION_MAX_PER_RUN`) defaults to 1000,
+    at most 100000 - the form and the retention take the same limits from
+    `models/lib/attachmentRetention.js` (the form used to accept 1000000 and
+    the retention silently cut it to 100000).
     The form accepts up to 1,000,000, but the job itself caps the value at
     100,000.
 - **Backup** - the schedule, overdue rule, history and `BACKUP_KEEP_DAYS` are
@@ -201,7 +204,7 @@ the app boots — see
 
 ## Related
 
-- [Attachments (cards)](../../Cards/Attachments/Attachments.md) — what a user sees.
+- [Attachments (cards)](../../Cards/Attachments/README.md) — what a user sees.
 - [Attachment migration system](../../Board-Sidebar/Board-Settings/Import-Export/Attachment/Attachment-Migration-System.md)
 
 ## The panes, in menu order
@@ -216,7 +219,8 @@ the address uses: `/admin/attachments/<slug>`.
 | Attachments / Move Attachment | `move` | — |
 | Attachments / Default Save Storage | `default-save-storage` | — |
 | Attachments / Limits | `limits` | — |
-| Attachments / Retention | `retention` | [Attachments.md](../../Cards/Attachments/Attachments.md) |
+| Attachments / Retention | `retention` | [Attachments.md](../../Cards/Attachments/README.md) |
+| Attachments / Encrypt | `encrypt` | [Encrypt.md](Encrypt.md) |
 | Attachments / MongoDB GridFS Storage | `gridfs` | — |
 | Attachments / Filesystem Storage | `filesystem` | — |
 | Attachments / S3/MinIO Storage | `s3` | — |
@@ -225,7 +229,7 @@ the address uses: `/admin/attachments/<slug>`.
 | Attachments / WebDAV (Nextcloud Files) | `webdav` | — |
 | Attachments / Database migration | `database-migration` | — |
 
-10 of these 13 panes has no page of its own yet. A dash is a
+10 of these 14 panes has no page of its own yet. A dash is a
 gap to fill, not a pane that does nothing - what the pane shows is described in
 this README until somebody writes it up.
 

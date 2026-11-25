@@ -57,12 +57,33 @@ not `isAdmin`. Organization administrators do not see it.
 2. Click **Acknowledge** to reset their new-problem count (the rows stay), or
    **Clear** to delete their rows up to now.
 
+### Sign-in refusals (#6942)
+
+When somebody could not sign in, **Sign-in refusals** says why: one row per
+reason - wrong password, no such account, account disabled, too many
+attempts, an incomplete request, and for LDAP: the directory refused the
+password, not in the allowed group, an account with that name not linked to
+the directory, or the account belongs to another directory entry - with how
+many times it happened, the latest account and address, and one line on how
+to fix it, which opens the pane where it is fixed. The person signing in
+still sees the same generic message whatever the reason, so the sign-in page
+never tells a stranger which accounts exist.
+
+Under each problem area, its most frequent kinds are listed too: what
+happened, how many times, when last, and the latest account or address.
+
 ## How the numbers are calculated
+
+- **A newer WeKan is available**: shown when the last **Check version** in
+  Admin Panel / Settings / Version found a newer WeKan than this server
+  runs, until the server runs it. WeKan never checks on its own: the result
+  is the one an administrator asked for, kept in the `versionChecks`
+  collection (`models/lib/versionCheck.js` `updateProblem`).
 
 | Number | How it is computed |
 | --- | --- |
 | Reload | the pane reloads every 30 seconds (`Meteor.setInterval(..., 30000)` in [client/components/settings/problemsSummary.js](../../../../client/components/settings/problemsSummary.js)). |
-| Broken cards | `Cards.find(brokenCardsSelector()).countAsync()`: cards whose `boardId`, `swimlaneId` or `listId` is null, `''` or missing ([models/lib/brokenCardsRepair.js](../../../../models/lib/brokenCardsRepair.js)). The detail line also mentions an invalid type, but the count does not test the type. |
+| Broken cards | `Cards.find(brokenCardsSelector()).countAsync()`: cards whose `boardId`, `swimlaneId` or `listId` is null, `''` or missing, or whose `type` is not one of the four card types WeKan shows ([models/lib/brokenCardsRepair.js](../../../../models/lib/brokenCardsRepair.js), the same definition the Broken cards pane lists with). |
 | Repair broken cards result | how many cards were placed on their board's first usable list / swimlane, and how many cannot be placed (no board id at all; never deleted). |
 | Lists missing their swimlane | lists with no `swimlaneId` whose creation swimlane is recorded in the list's position history and still exists, and whose cards are not in another swimlane ([server/lib/restoreListSwimlanes.js](../../../../server/lib/restoreListSwimlanes.js), [models/lib/listSwimlaneRestore.js](../../../../models/lib/listSwimlaneRestore.js)). Restore reports how many were restored and how many remain. |
 | Board data-repair | `boardsDone/boardsTotal` boards ([Repairs.md](Repairs.md)). |
@@ -131,9 +152,12 @@ problem (`models/lib/eventLogProblems.js`), so a CPU spike that only records
 its own mitigation does not raise the count.
 
 The menu name comes from `STREAM_LABEL_KEY` in `problemsSummary.js`, which
-names Security Report, Speed, Tests, CPU usage, Memory usage and Disk usage.
-`database`, `integrity` and `mail` have no entry there, so their line shows the
-stream id itself (for example `Admin Panel → Problems → database`).
+names every stream with the key its own pane has in the Problems menu: Security
+Report, Speed, Tests, CPU usage, Memory usage, Disk usage, Database problems,
+Filesystem integrity and Email. Until 2026-11-24 the last three had no entry and
+their line showed the stream id itself (`Admin Panel → Problems → database`);
+[tests/problemsSummaryLabels.test.cjs](../../../../tests/problemsSummaryLabels.test.cjs)
+now fails when a stream has no name or a different one than its pane.
 
 Tick the streams you have reviewed, then:
 

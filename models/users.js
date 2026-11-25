@@ -1326,7 +1326,7 @@ Users.attachSchema(
        * When this user last opened each board: { <boardId>: Date }, at most
        * 500 boards. Board menu -> Since your last visit lists what changed
        * after the visit before the current one
-       * (docs/Features/General/Since-Last-Visit/Since-Last-Visit.md); written
+       * (docs/Features/Since-Last-Visit/README.md); written
        * only by boards.markVisited.
        */
       type: Object,
@@ -1476,6 +1476,17 @@ Users.attachSchema(
       type: Boolean,
       optional: true,
     },
+    legalAcceptances: {
+      /**
+       * the versions of the terms and the privacy notice this account
+       * accepted: { terms: { version, at }, privacy: { version, at } }
+       * (models/lib/legalAcceptance.js, WP-8). Without this the schema
+       * silently dropped every acceptance.
+       */
+      type: Object,
+      optional: true,
+      blackbox: true,
+    },
     authenticationMethod: {
       /**
        * authentication method of the user
@@ -1524,6 +1535,14 @@ Users.attachSchema(
        * USERS_DISABLE_INACTIVE_AFTER_DAYS: when the inactivity clock last
        * (re)started for an account with no lastConnectionDate, or was re-enabled
        * (models/lib/inactiveUsers.js)
+       */
+      type: Date,
+      optional: true,
+    },
+    loginDisabledAt: {
+      /**
+       * when loginDisabled was set for inactivity; USERS_ANONYMIZE_INACTIVE_AFTER_DAYS
+       * counts from it, and enabling the account clears it
        */
       type: Date,
       optional: true,
@@ -3224,6 +3243,14 @@ if (Meteor.isServer) {
         doc && doc._id,
         error,
       );
+    }
+    // The rest of the person's data: every collection the personal-data
+    // inventory says goes with them (models/lib/userErasure.js, WP-4). Its own
+    // try per rule, so a failure here never undoes the cleanup above.
+    try {
+      if (doc && doc._id) await require('/server/lib/userErasureRun').runUserErasure(doc, 'delete');
+    } catch (error) {
+      console.error('[userErasure] Failed to erase the data of deleted user', doc && doc._id, error);
     }
   });
 

@@ -25,7 +25,7 @@ const AREAS = [
   { id: 'problems', labelKey: 'problems', pattern: /eventlog|problem|instrumentation|cpu|statistic|selfcheck|report|repair|recovery|integrity|filestatus|brokencard|systemstatus|checknewest|progress|status$/i },
   { id: 'rules', labelKey: 'rules', pattern: /rule|trigger|action|^bot|bots?run/i },
   { id: 'history', labelKey: 'history', pattern: /history|activities|activityfeed|position|timeline|undo|redo/i },
-  { id: 'people', labelKey: 'people', pattern: /user|people|member|org|team|domain|group|profile|language|setinitials|tenant|anonymiz|myadmin|invit|^setemail|usernameandemail|emailverified|customboardrole|avatar|audit/i },
+  { id: 'people', labelKey: 'people', pattern: /user|people|member|org|team|domain|group|profile|language|setinitials|tenant|anonymiz|myadmin|invit|^setemail|usernameandemail|emailverified|customboardrole|avatar|audit|dataaccess/i },
   { id: 'notifications', labelKey: 'notifications', pattern: /notif|email|mail|ntfy|bounce|smtp|announcement|webpush|watch/i },
   { id: 'attachments', labelKey: 'attachments', pattern: /attachment|file|gridfs|s3|azure|gcs|background|storage(stats|paths|settings|locations)|(attachment|move)tostorage|attachmentstorage/i },
   { id: 'checklists', labelKey: 'checklists', pattern: /checklist/i },
@@ -38,7 +38,7 @@ const AREAS = [
   { id: 'lists', labelKey: 'lists', pattern: /list|wip/i },
   { id: 'cards', labelKey: 'cards', pattern: /card|vote|poker/i },
   { id: 'boards', labelKey: 'boards', pattern: /^shop|board|workspace|template|view|scrum|sprint|calendar|chart|chat|map|starred|dependenc|archive|quit|clone|key$|^vcs|(?<!re)move|copy/i },
-  { id: 'settings', labelKey: 'settings', pattern: /setting|config|feature|translation|theme|customui|matomo|webhook|dateformat|startday|calendarsystem|limit|api|version|accessibility|optional|accountsetting|softlimit|^set(leftmenu|mobilemode|sidebar|ui|permanentdelete)|^toggle|sitelogo|imageurl|unsaved-edits|activitypub|adminpanel/i },
+  { id: 'settings', labelKey: 'settings', pattern: /setting|config|feature|translation|theme|customui|matomo|webhook|dateformat|startday|calendarsystem|limit|api|version|accessibility|optional|accountsetting|softlimit|^set(leftmenu|mobilemode|sidebar|ui|permanentdelete)|^toggle|sitelogo|imageurl|unsaved-edits|activitypub|adminpanel|legalpage|legalcontact|legalacceptance|retentionoverview|compliancecheck|ropadraft|registrationminimumage|mysession|logoutuser/i },
 ];
 const OTHER = { id: 'other', labelKey: 'instrumentation-other' };
 

@@ -63,6 +63,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Delete (`delete`) | [settings.js](../../../server/models/settings.js) | Explicit administrator permanent-delete setting; purge remains a separate action. Was Problems / Delete. |
 | Announcement (`announcement`) | [announcements.js](../../../models/announcements.js) | Saved banner content and visibility; rendered through announcement controls. |
 | Accessibility (`accessibility`) | [accessibilitySettings.js](../../../models/accessibilitySettings.js) | Saved accessibility content and configuration. |
+| Legal pages (`privacy`) | [legalPages.js](../../../server/methods/legalPages.js) | Published pages and contacts, saved only by a site administrator, audited. |
 | Translation (`translation`) | [translation.js](../../../server/models/translation.js) | Add/edit/delete custom translation records with administrator checks. |
 | PWA (`pwa`) | [settingBody.js](../../../client/components/settings/settingBody.js) | Saved head/manifest/assetlinks configuration; device installation requires a device check. |
 | Global Webhooks (`global-webhooks`) | [outgoing.js](../../../server/notifications/outgoing.js) | Global integration configuration and event delivery; endpoint delivery requires a configured receiver. |
@@ -101,6 +102,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Default Save Storage (`default-save-storage`) | [attachmentStorageSettings.js](../../../server/models/attachmentStorageSettings.js) | Validates backend and persists default for new files. |
 | Limits (`limits`) | [attachmentStorageSettings.js](../../../server/models/attachmentStorageSettings.js) | Saves size/blocking policies used by upload/download routes. |
 | Retention (`retention`) | [attachmentRetention.js](../../../server/attachmentRetention.js) | New (#6789): the shared override form on the catalog's attachmentRetention section; the nightly job soft-deletes through the card's Delete and purges through Attachments.removeAsync. Rules in [attachmentRetention.test.cjs](../../../tests/attachmentRetention.test.cjs); the pane in a Chromium/Firefox/WebKit UI spec. |
+| Encrypt (`encrypt`) | [attachmentEncryptionRun.js](../../../server/lib/attachmentEncryptionRun.js) | New: only while ATTACHMENTS_PASSPHRASE is set. Encrypts or decrypts every attachment on this server's disk in the background, and new ones after validation; read back plain, ranges included, through the filesystem strategy, so addresses stay the same. [attachmentEncryption.test.cjs](../../../tests/attachmentEncryption.test.cjs). |
 | MongoDB GridFS Storage (`gridfs`) | [fileStoreStrategy.js](../../../models/lib/fileStoreStrategy.js) | Native GridFS read/write and metadata statistics; compaction requires actual MongoDB, not SQLite. |
 | Filesystem Storage (`filesystem`) | [fileStoreStrategy.js](../../../models/lib/fileStoreStrategy.js) | Filesystem read/write strategies and metadata statistics. |
 | S3/MinIO Storage (`s3`) | [cloudStorage.js](../../../models/lib/cloudStorage.js) | Real S3 adapter, connection test and secret-preserving settings; configured live storage not exercised here. |
@@ -114,6 +116,7 @@ are not reachable from the current Admin Panel menu. Current storage panes use
 | Pane / URL slug | Implementation | Behavior and limits |
 | --- | --- | --- |
 | Summary (`summary`) | [systemStatus.js](../../../server/methods/systemStatus.js) | Actual startup/login checks, active migrations and problem streams. |
+| Compliance (`compliance`) | [complianceChecks.js](../../../server/methods/complianceChecks.js) | Read-only checklist of the settings GDPR, HIPAA, NIS2, ISO 27001 and SOC 2 look for, each linking to its pane; changes nothing. |
 | Backup (`backup`) | [backup.js](../../../server/methods/backup.js) | Recorded backup runs, health of the instance backup and its history (backupHistory method); settings stay in Attachments / Backup. |
 | Security Report (`security-report`) | [eventLog.js](../../../models/eventLog.js) | Recorded security events, search, detail and acknowledgement. |
 | Impersonation Report (`impersonation`) | [impersonationReport.js](../../../server/publications/impersonationReport.js) | Scoped event publication and counts. |

@@ -96,6 +96,586 @@ Which databases WeKan supports
 
 </details>
 
+# v13.31 2026-11-25 WeKan ® release
+
+**In short:** A person can **download everything WeKan holds about them**
+and **be erased everywhere**; an operator publishes a **privacy notice, terms
+and imprint**, can **require accepting them**, and limits how long records are
+kept. Administrators **export their lists as CSV**, see **who downloaded what**,
+check a **Compliance** checklist; the pages pass **WCAG 2.2 AA** checks, and
+every
+release carries a **CycloneDX SBOM**, with **security.txt** from the security
+contact. **Problems / Summary** groups **sign-in refusals by reason** with the
+fix for each, the **delay after a wrong password** is applied at last, the
+**Docker image is distroless**, and the server tests pass again.
+
+This release adds the following new features:
+
+**Privacy and personal data** - a person's right to their data, to have it
+erased, and to have it kept no longer than needed (docs/Compliance/README.md,
+WP-4 to WP-12).
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/29a41bd51c39a1a42eeb63d3e3dd11b6096329d6">Legal pages: privacy notice, terms, cookie notice and imprint, readable before signing in</a>. Thanks to xet7.</summary>
+
+An operator publishes them in Admin Panel / Settings / Legal pages, starting the
+privacy notice from a draft built from what WeKan really stores; anybody reads
+the published ones at `/privacy`, `/terms`, `/cookies` and `/imprint`, linked
+from the login page and from the new Member Settings / Privacy and my data,
+which also holds Download my data. The imprint's fields and the privacy
+contacts are shown only when filled. Saving is for site administrators and is
+in the Audit log. Matomo, when turned on, now never sets a cookie.
+`tests/legalPages.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7a25e33ca790ef10b8259113a6c0e8f99a721d3d">Download my data: everything WeKan holds about a person, as a ZIP of JSON</a>. Thanks to xet7.</summary>
+
+Member Settings / Download my data and `GET /api/user/export` give the
+signed-in person their account without secrets and every row of every
+collection the personal-data inventory says holds their data, with a manifest
+of what is in the file and what is not, and why. Of a shared board, card or
+list only their own part; secrets are removed at every depth. An administrator
+can export any account, recorded in the Audit log.
+`tests/personalDataExport.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5dff6c0ec9b964d96b0ccf1c418f94fd1fc758f8">Erasing a person removes their data everywhere it is kept, on deletion and on anonymisation</a>. Thanks to xet7.</summary>
+
+Deleting an account removed only the account and its board, card and list
+memberships; 40 collections kept the person - workload, time entries, sign-in
+addresses, sessions, jobs, credentials, notifications, reactions, problem
+tallies. `models/lib/userErasure.js` has a rule for each and runs on deletion
+and on anonymisation; an invoiced time entry is kept without the person, and
+an anonymised account keeps its references. Anonymisation now also removes
+every sign-in service, passkeys and sign-in addresses.
+`tests/userErasure.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/176771109ceebe5b2ac5e2edc3b69a5b88c9950e">The audit log, board activities and workload absences each have a retention an operator sets</a>. Thanks to xet7.</summary>
+
+`ADMIN_AUDIT_RETENTION_DAYS` replaces the audit log's fixed year (365 by
+default, 0 keeps it, HIPAA sets 2190 or more). `ACTIVITIES_RETENTION_DAYS` and
+`WORKLOAD_ABSENCE_RETENTION_DAYS` remove older activity rows and ended
+absences, both off by default; a card's change history is never removed.
+`WORKLOAD_ABSENCE_TYPE_RECORDED=false` records no sick leave at all. Admin
+Panel / Settings / Legal pages shows every personal-data collection with its
+retention on this server. `tests/retentionSettings.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/adf479272ab5be4b48edb0185b62ef53dc037c1e">Every account can be required to accept the current terms and privacy notice</a>. Thanks to xet7.</summary>
+
+Admin Panel / Settings / Legal pages has Require acceptance for the terms of use
+and the privacy notice. Until an account has accepted the current version of
+each, it sees only the acceptance dialog after signing in, and the server
+answers nothing else for it; each new version is asked for again. The accepted
+versions are kept on the account, shown in Member Settings / Privacy and my
+data and part of Download my data, and the sign-up form has an "I accept"
+checkbox meanwhile. The REST API is not gated. The seven new strings are in
+every language, and Venetian, Veps and Waray, which had Venda and Walloon in
+their legal-pages strings, are now in their own languages.
+`tests/legalAcceptance.test.cjs`,
+`tests/playwright/specs/legal-acceptance.e2e.js`,
+`tests/wrongLanguageCorrections20261124.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ea95943687724da1f8982408e62933b2e11f2567">CSV exports of People, Boards, Boards and roles, Security and the Audit log, and one's own sign-in history</a>. Thanks to xet7.</summary>
+
+Export CSV on Admin Panel / People, Problems / Boards, Problems / Security and
+the Audit log gives the whole list rather than the page on screen; Boards and
+roles is one row per board member with the role, for an access review. Only a
+site administrator can download them, every download is in the Audit log, no
+password, token or key is ever a column, and a cell a spreadsheet would run as
+a formula is written as text. Member Settings / Privacy and my data lists where
+the account signed in from. `tests/adminCsvExport.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1319f01e17fd155c8f2f3eadc3714c6a1effb05c">The Audit log's Data access tab shows who downloaded what, and AUDIT_LOG_STDOUT=json feeds a SIEM</a>. Thanks to xet7.</summary>
+
+Every export that answers 200 - a board in any format, a chart, a card, every
+board, a person's data, an Admin Panel list - is counted in one row per
+person, day, kind and target, never a row per download, kept as the audit log
+and anonymised on erasure; a test fails when an export route is missing from
+it. With `AUDIT_LOG_STDOUT=json` every audit row, security problem and data
+access is also a JSON line on stdout, carrying only what the Admin Panel shows.
+The admin CSV exports now obey the switch that turns all export off.
+`tests/dataAccessLog.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/eb144f07c9077f55775a1ca4f502a9f8e655ca73">Admin Panel / Problems / Compliance checks the settings the laws and standards look for</a>. Thanks to xet7.</summary>
+
+A read-only checklist: two-factor authentication, idle sign-out, HTTPS with
+HSTS, sign-in address retention, audit log retention for HIPAA, the privacy
+notice and imprint, the security contact and an encrypted continuous backup.
+Each row says OK, Check or For information, shows this server's value and
+links to the pane that changes it. `tests/complianceChecks.test.cjs`.
+
+</details>
+
+**Accessibility** - WCAG 2.2 AA.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/292d1db00dd8a82019c8fb7d4bcc288a40292f49">The pages pass axe's WCAG 2.2 AA rules, keyboard focus is never hidden, and a statement draft</a>. Thanks to xet7.</summary>
+
+The axe scan runs the 2.2 rules, and its one finding - the minicard's menu and
+collapse targets under 24 pixels - is fixed, as are the contrast and heading
+findings on the legal pages, the Compliance pane, the Audit log and Legal
+pages, which the scan now visits. A new check fails when a focused control is
+hidden behind the header or a popup. Admin Panel / Settings / Accessibility
+offers a draft statement with the parts the Web Accessibility Directive asks
+for. `tests/accessibilityStatementDraft.test.cjs`,
+`tests/playwright/specs/45-axe-accessibility.e2e.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6a7af5391abc435b5a71a5f9862e4273be15da35">Every Admin Panel pane and the most used popups pass too, at 320 px and with reduced motion</a>. Thanks to xet7.</summary>
+
+A new spec scans every Admin Panel pane and the member, list, swimlane and
+card details menus, checks 320 px reflow, and checks that nothing animates when
+reduced motion is asked for. What it found is fixed: unnamed inputs and selects
+are named by the label beside them, faint descriptions, badges and the default
+theme's menu hover pass 4.5:1, small checkbox rows and links are 24 x 24 px,
+the member menu's dependency toggles are checkboxes in a proper list, and one
+reduced-motion rule in its own CSS layer stops every animation and transition.
+`tests/playwright/specs/47-accessibility-everywhere.e2e.js` passes in Chromium,
+`tests/accessibilitySpec47Fixes.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7697e8250ccb1e14767268ec2a415588e5f667d4">The main tasks work with the keyboard alone, and password managers recognise the sign-in name field</a>. Thanks to xet7.</summary>
+
+A keyboard-only spec signs in with Tab, typing and Enter, opens and closes a
+card, and adds cards; it also checks no CAPTCHA and pasting allowed when
+signing in (3.3.8), nothing entered twice when adding cards (3.3.7), and the
+help button in the same place on every Admin Panel pane (3.2.6). It found the
+sign-in "username or email" field without an autocomplete attribute - the one
+the account settings asked for never reached the page - which it has now.
+`tests/playwright/specs/48-keyboard-only.e2e.js`,
+`tests/accountsAutocomplete.test.cjs`.
+
+</details>
+
+**Privacy and personal data, the rest** - what was left on the compliance list.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/92fc9b686aff4ad521f9eb69de450a09f2286246">LOGIN_ADDRESS_RECORDED=false records no sign-in address, and long-disabled accounts can be anonymised</a>. Thanks to xet7.</summary>
+
+`LOGIN_ADDRESS_RECORDED=false` writes no sign-in address down at all; the
+lockout still counts failed sign-ins. `USERS_ANONYMIZE_INACTIVE_AFTER_DAYS`
+anonymises an account that many days after it was disabled for inactivity,
+never an administrator or an account enabled again.
+`tests/loginAddressRetention.test.cjs`, `tests/inactiveUsers.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/77b9bc984ab8a3a4d1af0cefb9872a50714f2008">Problems / Summary says when a newer WeKan is available</a>. Thanks to xet7.</summary>
+
+From the last Check version an administrator ran; WeKan still never asks
+wekan.fi on its own. `tests/versionUpdateProblem.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/77986e1d656be58127740e85244e0656923cb1d3">Emergency access, a hash-chained audit log, a minimum age on sign-up and a records of processing draft</a>. Thanks to xet7.</summary>
+
+Emergency access before Impersonate is kept with its note and e-mailed to
+every other administrator. Every audit log row is hash-chained, and a daily
+check reports an edited or removed row in Problems / Filesystem integrity.
+`REGISTRATION_MINIMUM_AGE` asks a password sign-up to confirm the minimum
+age. Admin Panel / Settings / Legal pages drafts the records of processing
+from what this server really stores and uses. `tests/emergencyAccess.test.cjs`,
+`tests/auditChain.test.cjs`, `tests/registrationAge.test.cjs`,
+`tests/ropaDraft.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a242275be82d1befa2fa209f7c5782b1141c89e3">Where I am signed in, with Sign out per session, and BACKUP_PASSPHRASE encrypts the backups</a>. Thanks to xet7.</summary>
+
+Member Settings / Privacy and my data lists every session of the account,
+each with Sign out, and Admin Panel / People can log an account out
+everywhere. `BACKUP_PASSPHRASE` encrypts every Admin Panel backup on disk and
+in cloud storage, and a restore decrypts it; a wrong passphrase or a changed
+file is refused. Both were run against a live server.
+`tests/sessionList.test.cjs`, `tests/backupEncryption.test.cjs`,
+`tests/playwright/specs/backup-passphrase.e2e.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/6cde02380ada26748ee651e5a003f6654ececb46">Admin Panel / Attachments / Encrypt encrypts the attachments on disk, at the same addresses</a>. Thanks to xet7.</summary>
+
+While `ATTACHMENTS_PASSPHRASE` is set, the Encrypt pane encrypts or decrypts
+every attachment on this server's disk and can encrypt new ones as they
+arrive. They are decrypted as they are read - byte ranges too, as the cipher is
+AES-256-CTR - so every address, preview and export works as before. Tested
+against a live server. `tests/attachmentEncryption.test.cjs`,
+`tests/playwright/specs/attachment-encryption.e2e.js`.
+
+</details>
+
+**The Admin Panel** - Problems / Summary as a status dashboard.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/788131193ee52d1ad55039fc28c6dc45c130cc00">Sign-in refusals are grouped by reason, each with its count, latest account and fix</a>. Thanks to Raymond-Voogt and xet7.</summary>
+
+The person signing in still sees the same generic message whatever the
+reason, so nobody can tell "no such user" from "wrong password". Each refusal
+is recorded with its precise reason: wrong password, unknown user, disabled
+account, brake, malformed request, and the LDAP reasons. The LDAP handler
+records its reason and then returns its single generic error, including the
+two messages that used to name the account. The Summary shows one row per
+reason with its count, first and latest time, latest account and address,
+the fix and a button to the pane where it is made, and every problem area
+lists its three most frequent problems ([#6942](https://github.com/wekan/wekan/issues/6942)).
+`tests/loginRefusals.test.cjs`, `tests/ldapAccountBinding.test.cjs`.
+
+</details>
+
+**Security reporting** - where to report a vulnerability, which version is
+supported, and what a release is made of.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/1652c86f550d5cf9be6eb5e10888c423343d2550">security.txt from the security contact, a support period, and a CycloneDX SBOM on every release</a>. Thanks to xet7.</summary>
+
+`/.well-known/security.txt` (RFC 9116) is made from the security contact of
+Admin Panel / Settings / Legal pages, with Expires 180 days ahead, and answers
+404 while none is set. SECURITY.md states the support period: fixes go into
+the newest release only. Each release gets `wekan-<version>-sbom.cdx.json`
+from `npm sbom`, linked from Admin Panel / Settings / Version, and
+`docs/Security/Compliance/README.md` is a guide for operators under GDPR,
+HIPAA, NIS2, ISO 27001 and SOC 2. `tests/securityTxt.test.cjs`.
+
+</details>
+
+and fixes the following bugs:
+
+**Search** - operators in every language.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a2cb9f4416d69a2330c042585df09462bee475b7">An operator whose translation is more than one word works, in every language</a>. Thanks to xet7.</summary>
+
+The search reads an operator as one word followed by ":", so a translated
+operator with a space or a stray "|" could never be typed: 450 operator words
+in 142 languages, such as "pasgemaakte veld" for customfield in Afrikaans,
+did not work at all. Each is now read as the help shows it, and as one word.
+Odia's operators are one word each, and its old swimlane word, which did
+work, still does. `tests/searchOperatorWords.test.cjs` runs the real parser
+with every language's own words.
+
+</details>
+
+**Keyboard** - closing what is open.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/57dbff0abdf84825c6fce3b0b70d983204edd756">Escape closes a popup for a member who turned keyboard shortcuts off</a>. Thanks to xet7.</summary>
+
+With keyboard shortcuts off in Member Settings, Escape closed no popup or menu
+at all: the shortcut filter refused every key before it let Escape through.
+Escape is not a shortcut but how a popup is closed from the keyboard, so it is
+let through first now. Found by the help button's Playwright spec, which
+passes now. `tests/escapeWithoutShortcuts.test.cjs`.
+
+</details>
+
+**Privacy and personal data** - accepting the terms, as a browser does it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/aa9a4ba2eab6d6f3e38ccafdef1b93a53aa2baec">Accepting the terms is kept on the account, and its checkbox can be ticked</a>. Thanks to xet7.</summary>
+
+Running the acceptance in a browser showed that the account schema dropped
+every acceptance without an error, so the next sign-in asked again, and that
+the global form rules hid the checkboxes of the acceptance dialog, the sign-up
+form and the Legal pages switches. Both are fixed, and the gate reads the
+requirement again before refusing anything, so one turned off elsewhere blocks
+nobody. `tests/playwright/specs/legal-acceptance.e2e.js` passes.
+
+</details>
+
+**Login** - the brake on password guessing.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/4cb1bbfe5753e3c96b82d13617bbe35389320c29">The increasing delay after a wrong password is applied</a>. Thanks to xet7.</summary>
+
+After a wrong password, an address waits 1 second before its next attempt, and
+the wait doubles with each further wrong password up to 30 seconds; an attempt
+that comes sooner is refused and not counted. It never ran: the server's
+startup and the Admin Panel's reload started the lockout with three of its
+settings, so the delay's base reached the decision as undefined, which means
+"off". Every setting is read from one list now, `models/lib/lockoutConfig.js`,
+by both and by the model; a stored 0 still switches the delay off.
+`tests/lockoutDelayApplied.test.cjs` reproduces the missing delay and fails
+when a place that starts the lockout builds its settings by hand.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ba109852133de6c83d9a1fc16b22da4df82bb4d">A sign-in refused by policy is not counted as a wrong password</a>. Thanks to xet7.</summary>
+
+With password login off, a password sign-in was refused, and then the lockout
+counted it as a guess and threw its own 403 "Incorrect password" over the
+refusal: the person was told the wrong thing, and enough attempts locked the
+account because of a setting. Forgot password off and LDAP's password-login
+guard did the same. These refusals tell a guesser nothing and are no longer
+counted. `tests/loginFailureDecision.test.cjs`,
+`server/lib/tests/passwordLoginDisabled.tests.js`.
+
+</details>
+
+**Cards and attachments** - who did it, and how often it is listed.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ba109852133de6c83d9a1fc16b22da4df82bb4d">Auto-archive is recorded as the board's admin, not as nobody</a>. Thanks to xet7.</summary>
+
+The hourly scan fetched its boards without their members, so the board actor
+was never found and every auto-archive activity had no user.
+`tests/boardActor.test.cjs`, `server/lib/tests/autoArchiveCards.tests.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ba109852133de6c83d9a1fc16b22da4df82bb4d">An upload is listed once in the card history, not twice</a>. Thanks to xet7.</summary>
+
+The upload hook and the attachment content index each wrote an "added" row.
+The index writes its row only for an attachment that has none, and never for
+a durable rule copy, whose plan writes it; the hash stays on the attachment.
+`tests/attachmentContent.test.cjs`,
+`server/lib/tests/storedRuleCopyCard.tests.js`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/56e1ad0980d7397db3eca3c74419164f1e1c976f">A PDF in the attachment slideshow uses the window again, not a third of it</a>. Thanks to xet7.</summary>
+
+The slideshow's text and archive viewers, given `display: flex` by an id rule
+that outranks `.hidden`, showed as two empty white boxes beside every PDF,
+image and video: a PDF was 468px wide in a 1600px window.
+`tests/hiddenNotOutrankedById.test.cjs` looks for that mistake in every
+template. Found in the same run: Problems / API's person links had no name
+for a screen reader, and Attachments / Encrypt, reachable without
+`ATTACHMENTS_PASSPHRASE`, had no title; seven browser tests that expected the
+old behaviour now check the current one.
+
+</details>
+
+**The Admin Panel** - Problems and Attachments, as found while documenting
+them.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7042d228e6bdefd61de2c1a49df015858d20e86d">The Summary counts and repairs the cards of an unknown type that Broken cards lists</a>. Thanks to xet7.</summary>
+
+The Broken cards pane listed a card whose type is not one of the four WeKan
+shows, while the Summary's "Broken cards N" and its repair looked only at a
+missing board, swimlane or list, so such a card was never counted and never
+fixed. "Broken" is one definition now, used by the pane, the count and the
+repair, and the repair gives such a card the plain card type.
+`tests/brokenCardTypes.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/ebbfacf43b308f1647ccebb4d423774a783872d4">The Summary names the database, integrity and mail problems by their panes</a>. Thanks to xet7.</summary>
+
+Their lines read "Admin Panel → Problems → database", "integrity" and "mail".
+They now say Database problems, Filesystem integrity and Email, as the Problems
+menu does, and `tests/problemsSummaryLabels.test.cjs` requires every problem
+stream to have the same name on the Summary as in the menu.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/a8c606aeb994a4dcdd8f7f4bb28654f01600a484">The Recovery pane's rule email text says Review resends, marks sent or drops, in every language</a>. Thanks to xet7.</summary>
+
+It said "This report does not retry or cancel delivery", which stopped being
+true when Review, Resend, Mark as sent and Drop were added on 2026-09-30.
+`tests/ruleEmailRecoveryDescription.test.cjs` fails when a language keeps the
+old sentence or does not name its own Review button.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/f510ba59619c5752804121405fea06e3d5a03395">The Problems report tables and the Email pane are in every language, not English</a>. Thanks to xet7.</summary>
+
+Their column names, filter labels and options ("Title", "Archived?", "Show",
+"All" ...) and the Email pane's "Email service" and "Enable below email
+settings" were English in the code, found by the accessibility spec. 42 labels
+use translation keys now, 17 of them new.
+`tests/problemsTablesTranslated.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/76fd0e443453f8b70ef4bed3df7e2c286f623f83">The attachment retention form accepts only the per-run limit the retention uses</a>. Thanks to xet7.</summary>
+
+"At most per run" accepted up to 1000000, and the retention cut anything above
+100000 without saying so. The form takes its default and maximum from the
+retention itself now. `tests/attachmentRetention.test.cjs`.
+
+</details>
+
+**The Docker image** - distroless: no shell, no package manager, and none of
+the Debian packages WeKan never ran.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/130af564c9b88c2915d1038a4bb612da649590d0">The image is distroless, and its entrypoint is Node.js</a>. Thanks to xet7.</summary>
+
+Artifact Hub's Trivy report of v13.30 listed 218 vulnerabilities in
+`ghcr.io/wekan/wekan`: 214 in Debian packages - util-linux, login, tar,
+coreutils, systemd libraries, sqlite - that WeKan never runs and Debian has
+no fix for yet, so no update could remove them. The image is now built on
+`gcr.io/distroless/cc-debian13`: glibc, libstdc++, libgcc, CA certificates
+and tzdata, then node, WeKan, FerretDB and the MongoDB tools. That base alone
+scans at 55 findings, 2 of them HIGH (from 214 and 50); the entry below takes
+it further.
+Distroless publishes no linux/386, so for 386 the same Debian 13 packages are
+assembled into `scratch`, each with its dpkg record so scanners still list
+them; the image keeps all seven platforms.
+
+With no shell, `releases/ferretdb/wekan-entrypoint.mjs` replaces
+`wekan-entrypoint.sh`: the same backend choice, heap and GOMEMLIMIT, MPTCP
+off, `MONGO_URL_FILE`, requested restore and backup, recovery and
+waiting-for-database pages, and cpu-exec's qemu-user decision. That fixes a
+fault the shell one had since v11.52: it ran `/build/node
+sqlite-recovery.mjs`, and the image never had a `/build/node`, so every start
+with the bundled FerretDB stopped with status 127. The UCS migration's
+launcher and tools, the UCS hook's volume preparation, the MongoDB tool
+launchers (now symlinks to `mongo-tools`) and the Nextcloud capability check
+use node too. The `wekan` user keeps uid 999. `docker exec -it wekan-app bash`
+no longer works; `node` does. The scanned Go libraries of `mongo-tools` are
+updated in
+[mongo-tools-patches](https://github.com/wekan/mongo-tools-patches/commit/1695d570e5c053be26394825f1fa06323047dbf9),
+and the FerretDB image is distroless too, in
+[FerretDB](https://github.com/wekan/FerretDB/commit/967f34415bb706eb95d12a4687dce080d9c63f54).
+`tests/dockerEntrypoint.test.cjs` runs the entrypoint with stand-in binaries.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/164dd5cdb0b323b3205c46ee0049cdcbc9874c7f">Its base is distroless base-nossl, without libssl and libgomp: 42 findings, none HIGH</a>. Thanks to xet7.</summary>
+
+`cc-debian13` adds libssl3t64 and libgomp1 to glibc, and nothing in the image
+loads either: node links OpenSSL 3.5 statically, and sharp, canvas, bcrypt
+and argon2 need neither. They were 20 of its 55 findings, both HIGH ones among
+them. The image is now `gcr.io/distroless/base-nossl-debian13` with gcc-14-base,
+libgcc-s1, libstdc++6 and libatomic1 from Debian 13, each with its dpkg record.
+That root, assembled for arm64 from the registry and deb.debian.org, runs node
+and loads every arm64 native module of the bundle; Trivy finds 42 findings in
+it, 0 HIGH and 0 fixable.
+
+</details>
+
+and has the following developer-tooling fixes:
+
+**Tests** - the Meteor server tests run, and pass.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/e39e4a12007736ef92eb190e8a5b516e311721e0">The Meteor test build no longer runs out of memory</a>. Thanks to xet7.</summary>
+
+In test mode the 170-190 MB client bundle was compiled a second time for the
+legacy browsers, which no test uses, and V8 ran out of memory. `build.sh` and
+`npm test` pass `--exclude-archs web.browser.legacy,web.cordova`, and set
+`METEOR_WATCH_FORCE_POLLING=true` because Meteor 3.6's watcher does not honour
+`.meteorignore` and walked all of `.tools`. `tests/testBuildMemory.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/5ba109852133de6c83d9a1fc16b22da4df82bb4d">All 699 server tests pass, from 693 with 6 failing</a>. Thanks to xet7.</summary>
+
+The four faults behind them are the Login and Cards and attachments entries
+above; the sixth expected null where Meteor 3's findOneAsync answers
+undefined for "not found", and accepts either now.
+
+</details>
+
+- [Browser tests: closing a form that already closed itself is no failure](https://github.com/wekan/wekan/commit/599c284d2a575f6e5c095172561b38bf51382629). Thanks to xet7.
+
+**Security downloads** - Artifact Hub's report of the Helm chart, beside
+GitHub's alerts.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/87b0638da1f84e1ae9ae26a76eb3ee47a2f6381d">The whole Artifact Hub security report is downloaded too</a>. Thanks to xet7.</summary>
+
+`releases/sec/download-artifacthub-security.sh` saves the Trivy report Artifact
+Hub makes of every image the chart names
+([helm/wekan/wekan](https://artifacthub.io/packages/helm/wekan/wekan)) to
+`.tools/log/sec/_artifacthub/`, with a file per image and a SUMMARY.md of every
+vulnerability with its installed and fixed version. The API is public, so it
+needs no login; `download-github-security.sh wekan` runs it too.
+`tests/securityDownloadArtifactHub.test.cjs`.
+
+</details>
+
+and reorganises the documentation:
+
+**Feature docs** - one folder per topic, as GitHub shows it.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/7e1f9e89eb5e534250c4cabe440ceec1ae822849">Every feature topic is one folder under docs/Features, with README.md as its main page</a>. Thanks to xet7.</summary>
+
+The General/ level is gone, its topics moved into the folders of the same
+name; accessibility is one folder; every folder opens on GitHub with its
+README.md; the 73 "Moved" forwarding pages are deleted and every link goes to
+the final page; docs/Features/README.md has the website's feature overview.
+`tests/docsFeaturesLayout.test.cjs` checks the layout and that every relative
+link in the docs resolves.
+
+</details>
+
+and updates the following translations:
+
+**Omi** - the strings of its new Gitea folder buttons.
+
+**Languages updated:** 232 languages.
+
+- [Omi's job progress strings in every language](https://github.com/wekan/wekan/commit/b7ea0843dced253cb694f6d109e5b39ccaa46db4). Thanks to xet7.
+- [Omi's Test the token and Stop strings in every language](https://github.com/wekan/wekan/commit/fc3ce327661bddd1af0e418bc286efb6cac0b291). Thanks to xet7.
+
+**Wrong-language words** - each locale in the language its tag names.
+
+**Languages updated:** 25 languages.
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/60d49c0435ebe6316e66e713360fb4ff4b97e9e1">Wrong-language and wrong-meaning words replaced in 25 languages</a>. Thanks to xet7.</summary>
+
+Neapolitan and Sicilian that were Italian, Luxembourgish that was German,
+Macedonian that was Bulgarian, Latvian with Lithuanian letters, Venetian that
+was Zulu; a Serbian board was "списи" (records) and a card "предмет", an
+Estonian board "juhatus" (a management board), a Punjabi and Odia swimlane
+was swimming. Search operator words, date formats and values earlier reviews
+pinned were kept. `tests/wrongLanguageCorrections20261124b.test.cjs`.
+
+</details>
+
+<details>
+<summary><a href="https://github.com/wekan/wekan/commit/b0d785e305d45a09d59c1fffc6a8b6b41b120694">The last wrong-language words in Shona, Maltese, Odia, Luxembourgish, Serbian and Venetian</a>. Thanks to xet7.</summary>
+
+Shona and Maltese help texts that were half English are in Shona and Maltese,
+a Maltese card is karta; Odia words split by English are whole again and its
+full stop is the danda; the Luxembourgish whiteboard is no longer the board's
+"Tafel"; Serbian names All Boards the same everywhere; and three Spanish
+values in Venetian are Venetian.
+
+</details>
+
+Thanks to above GitHub users for their contributions and translators for their translations.
+
 # v13.30 2026-11-23 WeKan ® release
 
 **In short:** The **wekan-ondra** and **wekan-gantt-gpl** snaps are published on

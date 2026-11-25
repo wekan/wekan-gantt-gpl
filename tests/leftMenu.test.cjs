@@ -591,9 +591,9 @@ test('the related-files table lists files that exist', () => {
 });
 
 test('the two page designs cross-link', () => {
-  assert.ok(/\[Table\]\(\.\.\/General\/Table\.md\)/.test(doc),
+  assert.ok(/\[Table\]\(\.\.\/Table\.md\)/.test(doc),
     'Left-Menu.md must link to Table.md - the two compose on the same page');
-  assert.ok(fs.existsSync(path.join(root, 'docs/Features/General/Table.md')));
+  assert.ok(fs.existsSync(path.join(root, 'docs/Features/Table.md')));
 });
 
 // ── the template and the pages must agree on the data shape ─────────────────
@@ -1096,6 +1096,21 @@ test('the menu has no bullets, and on a phone each group starts a row', () => {
   const phone = css.slice(css.indexOf('@media screen and (max-width: 800px)'));
   assert.ok(/li\.left-menu-separator,\s*\.setting-content \.content-body \.side-menu ul li\.left-menu-heading \{\s*flex:\s*0 0 100%;/.test(phone),
     'a separator and a group title take a whole line in the wrapping row');
+});
+
+// A pane whose menu entry is hidden still answers at its address (Attachments /
+// Encrypt without ATTACHMENTS_PASSPHRASE) and keeps its heading: the page passes
+// its own title for the pane. Negative: without one, no heading is invented.
+test('a pane whose entry is hidden keeps its title, from the page\'s own titles', () => {
+  const items = [{ id: 'backup', labelKey: 'backup' }];
+  assert.deepStrictEqual(lib.paneTitle(items, 'encrypt', { titleKey: 'attachment-encryption' }),
+    { titleKey: 'attachment-encryption', label: '', paneId: 'encrypt' });
+  assert.deepStrictEqual(lib.paneTitle(items, 'encrypt'), {});
+  assert.deepStrictEqual(lib.paneTitle(items, 'encrypt', {}), {});
+  assert.deepStrictEqual(lib.paneTitle(items, 'backup', { titleKey: 'other' }),
+    { titleKey: 'backup', label: '', paneId: 'backup' }, 'an active entry wins over the fallback');
+  const page = read('client/components/settings/attachments.js');
+  assert.ok(/paneTitle\(attachmentsMenu\(ReactiveCache\.getCurrentUser\(\)\), active,\n\s+adminPaneTitle\('attachments', active\)\)/.test(page));
 });
 
 console.log(`\nleftMenu: ${passed} tests passed`);

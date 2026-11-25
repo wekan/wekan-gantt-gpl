@@ -37,6 +37,10 @@
 //                   'n/a'.
 //   erasureWhere    the file that ACTUALLY does it today on user deletion or
 //                   anonymisation, or null when nothing does (the WP-4 gap).
+//                   For an integrity-checked delivery record - a checksum
+//                   protects it against replay, so it is never rewritten - it
+//                   is the compaction that reduces the row to ids, and its
+//                   notes say how soon.
 //   notes           what a reader needs to know, honestly.
 //
 // Pure data and helpers, no Meteor, CommonJS - like models/lib/userDeletionCleanup.js.
@@ -93,7 +97,7 @@ const INVENTORY = Object.freeze([
     subjectField: 'userId, memberId',
     purpose: 'Board activity feed: who did what to which board, list, card or comment.',
     legalBasisHint: 'legitimate interest',
-    retention: { env: null, default: 'board lifetime', where: 'server/models/boards.js' },
+    retention: { env: 'ACTIVITIES_RETENTION_DAYS', default: 'board lifetime (off unless set)', where: 'server/lib/activitiesRetention.js' },
     erasure: 'keep-pseudonymous',
     erasureWhere: null,
     notes: 'Kept on user deletion by design (#1289, models/lib/userDeletionCleanup.js header) so history stays readable; no age-based removal (Compliance README 2.7). Rows can embed comment text and attachment names.',
@@ -119,8 +123,8 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'compacted once delivered or cancelled', where: 'server/lib/activityNotificationCancellationRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Stores a copy of the activity document (actor id, card/board ids, text) while pending.',
+    erasureWhere: 'server/lib/activityNotificationCancellationRetention.js',
+    notes: 'Stores a copy of the activity document (actor id, card/board ids, text) while pending. Integrity-checked: never rewritten on erasure. A pending intent is delivered or, after ACTIVITY_NOTIFICATION_MAX_AGE_DAYS (7), cancelled, and then compacted to ids and a hash; delivery to a deleted account is skipped.',
   },
   {
     collection: 'activityNotificationLeases',
@@ -143,8 +147,8 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'compacted after delivery', where: 'server/lib/activityNotificationPlanRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Compaction keeps the id and a checksum; recipient user ids remain in uncompacted plans.',
+    erasureWhere: 'server/lib/activityNotificationPlanRetention.js',
+    notes: 'Compaction keeps the id and a checksum; recipient user ids remain in uncompacted plans. Integrity-checked: never rewritten on erasure; compacted to ids and a checksum once delivered, and delivery to a deleted account is skipped.',
   },
   {
     collection: 'activityPubFollowers',
@@ -154,9 +158,9 @@ const INVENTORY = Object.freeze([
     purpose: 'Fediverse actors (actor URL and inbox) that follow a public board.',
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'until the actor sends Undo Follow', where: 'server/activityPub.js' },
-    erasure: 'delete',
+    erasure: 'n/a',
     erasureWhere: null,
-    notes: 'Remote people, not WeKan users: no userId link. Rows are removed only by an Undo Follow; not removed with the board.',
+    notes: 'Remote people, not WeKan users: no userId link. Rows are removed only by an Undo Follow; not removed with the board. Not reachable by erasing a WeKan account: a follower is a remote person with no account here, and their own erasure is the ActivityPub Undo Follow that removes the row.',
   },
   {
     collection: 'activityPubKeys',
@@ -177,7 +181,7 @@ const INVENTORY = Object.freeze([
     subjectField: 'actorId',
     purpose: 'Audit trail of administrator actions: who, when, which method, masked arguments, client IP.',
     legalBasisHint: 'legal obligation',
-    retention: { env: null, default: '365 days (fixed AUDIT_KEEP_DAYS)', where: 'server/adminAudit.js' },
+    retention: { env: 'ADMIN_AUDIT_RETENTION_DAYS', default: '365 days (0 keeps it)', where: 'server/adminAudit.js' },
     erasure: 'keep-pseudonymous',
     erasureWhere: null,
     notes: 'Stores actorUsername and ip besides actorId; args may name the target user. Kept on user deletion as an audit record; nothing pseudonymises actorUsername yet.',
@@ -217,6 +221,19 @@ const INVENTORY = Object.freeze([
     erasure: 'n/a',
     erasureWhere: null,
     notes: 'Singleton job status.',
+  },
+  {
+    collection: 'attachmentEncryption',
+    definedIn: 'server/lib/attachmentEncryptionRun.js',
+    definedBy: "export const AttachmentEncryptionSettings = new Mongo.Collection('attachmentEncryption');",
+    categories: ['none'],
+    subjectField: null,
+    purpose: 'Whether new attachments are encrypted (Admin Panel / Attachments / Encrypt).',
+    legalBasisHint: 'n/a',
+    retention: { env: null, default: 'until changed', where: null },
+    erasure: 'n/a',
+    erasureWhere: null,
+    notes: 'Instance configuration, no per-person fields; the passphrase is never stored here.',
   },
   {
     collection: 'attachmentMigrationStatus',
@@ -423,7 +440,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'board lifetime', where: 'server/billing.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'FINANCIAL data: a member\'s own hourly rate is personal pay data. Not removed when the member is deleted.',
   },
   {
@@ -435,7 +452,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until the member makes a new address', where: 'server/emailToCard.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Not removed on user deletion or with the board; an orphaned row is refused on use because the member lost access.',
   },
   {
@@ -531,7 +548,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'board lifetime', where: null },
     erasure: 'anonymize',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'The user id should be pulled from reactions.userIds on deletion; nothing does it.',
   },
   {
@@ -653,7 +670,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until migrated or deleted', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Profile pictures of the user; the deletion plan removes only current Avatars, not these legacy rows.',
   },
   {
@@ -677,7 +694,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'card lifetime', where: 'models/cards.js' },
     erasure: 'anonymize',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'assigneeId should be cleared when the assignee is deleted; nothing does it.',
   },
   {
@@ -701,7 +718,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until the customer domain is deleted', where: 'server/cloudPanel.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'authorName and text identify the customer; not removed on user deletion.',
   },
   {
@@ -813,6 +830,19 @@ const INVENTORY = Object.freeze([
     notes: 'Definitions only; the values are on cards.',
   },
   {
+    collection: 'dataAccessLog',
+    definedIn: 'server/lib/dataAccessLog.js',
+    definedBy: "export const DataAccessLog = new Mongo.Collection('dataAccessLog');",
+    categories: ['identity', 'network', 'usage'],
+    subjectField: 'userId',
+    purpose: 'Who downloaded what (WP-11): one row per person, day, kind of export and target, with a count, the last address and the username.',
+    legalBasisHint: 'legitimate interest',
+    retention: { env: 'ADMIN_AUDIT_RETENTION_DAYS', default: 'as the audit log: 365 days (0 keeps it)', where: 'server/lib/dataAccessLog.js' },
+    erasure: 'anonymize',
+    erasureWhere: 'models/lib/userErasure.js',
+    notes: 'On erasure the username and address are removed and the anonymous user id stays, so the record of the download remains.',
+  },
+  {
     collection: 'dataHealth',
     definedIn: 'server/lib/dataHealthScan.js',
     categories: ['identity'],
@@ -845,7 +875,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'until an administrator clears the address', where: 'server/emailBounces.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Keyed by e-mail address, not user id; the history holds diagnostic text from the receiving mail server.',
   },
   {
@@ -869,7 +899,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'EVENTLOG_RETENTION_DAYS', default: '90 days', where: 'models/eventLog.js' },
     erasure: 'anonymize',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Holds the most recent username, IP address and geolocation plus a capped per-username and per-address tally (actors); nothing removes a deleted user from it before the retention sweep.',
   },
   {
@@ -917,7 +947,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until the owner deletes the job', where: 'server/githubOrgImport.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'The GitHub token is never stored here.',
   },
   {
@@ -977,7 +1007,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'LOGOUT_IDLE_MINUTES', default: 'until the session is idle-signed-out', where: 'server/idleLogout.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: '_id is the hashed login token. Rows of a deleted user stay until the idle sweep removes them (only when idle logout is enabled).',
   },
   {
@@ -1037,7 +1067,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'until used (then valid: false, kept) or removed by an admin or a bounce', where: 'server/models/settings.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Holds the invitee e-mail address; a used code is only invalidated, not removed. server/emailBounces.js removes valid codes of a bouncing address.',
   },
   {
@@ -1051,6 +1081,18 @@ const INVENTORY = Object.freeze([
     erasure: 'n/a',
     erasureWhere: null,
     notes: '',
+  },
+  {
+    collection: 'legalPages',
+    definedIn: 'models/legalPages.js',
+    categories: ['contact'],
+    subjectField: null,
+    purpose: 'The privacy notice, terms, cookie notice and imprint, and the privacy contacts, that the operator publishes (Admin Panel / Settings / Privacy).',
+    legalBasisHint: 'legal obligation',
+    retention: { env: null, default: 'until changed', where: null },
+    erasure: 'n/a',
+    erasureWhere: null,
+    notes: 'The imprint and the contacts name the operator and the people to contact, as the operator writes them; modifiedBy is the administrator who saved a page. Published on purpose.',
   },
   {
     collection: 'lists',
@@ -1072,9 +1114,9 @@ const INVENTORY = Object.freeze([
     purpose: 'Server-only credentials (token, remote username) of a synced list.',
     legalBasisHint: 'contract',
     retention: { env: null, default: 'list lifetime', where: null },
-    erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Never published. runAsUserId names the WeKan account the sync acts as; nothing removes it when that account is deleted.',
+    erasure: 'anonymize',
+    erasureWhere: 'models/lib/userErasure.js',
+    notes: 'Never published. runAsUserId names the WeKan account the sync acts as; nothing removes it when that account is deleted. On erasure the link to the account (runAsUserId) is removed and the sync waits for an administrator to pick another account.',
   },
   {
     collection: 'listSyncLeases',
@@ -1097,8 +1139,8 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: 'SYNC_RECEIPT_METADATA_DAYS', default: 'compacted 90 days after completion', where: 'server/lib/syncNotificationRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Compacted after delivery plus the retention period.',
+    erasureWhere: 'server/lib/syncPlanRetention.js',
+    notes: 'Compacted after delivery plus the retention period. Integrity-checked: never rewritten on erasure; compacted in place SYNC_RECEIPT_METADATA_DAYS (90) after delivery, and delivery to a deleted account is skipped.',
   },
   {
     collection: 'listSyncNotificationReceipts',
@@ -1325,8 +1367,8 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'SYNC_RECEIPT_METADATA_DAYS', default: 'compacted 90 days after completion', where: 'server/lib/syncRuleEmailRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Compacted in place to ids and checksum 90 days after the attempt is terminal.',
+    erasureWhere: 'server/lib/syncRuleEmailRetention.js',
+    notes: 'Compacted in place to ids and checksum 90 days after the attempt is terminal. Integrity-checked: never rewritten on erasure; compacted to ids and a checksum SYNC_RECEIPT_METADATA_DAYS (90) after the attempt is terminal.',
   },
   {
     collection: 'listSyncRuleEmailOutcomes',
@@ -1337,8 +1379,8 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'SYNC_RECEIPT_METADATA_DAYS', default: 'compacted 90 days after completion', where: 'server/lib/syncRuleEmailRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Removed when the command is compacted; addressed by e-mail, not user id.',
+    erasureWhere: 'server/lib/syncRuleEmailRetention.js',
+    notes: 'Removed when the command is compacted; addressed by e-mail, not user id. Integrity-checked: removed with the compaction of its command, SYNC_RECEIPT_METADATA_DAYS (90) after the attempt is terminal.',
   },
   {
     collection: 'listSyncRuleEmailResolutions',
@@ -1577,7 +1619,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'LOGIN_ADDRESS_RETENTION_DAYS', default: '365 days', where: 'server/lib/loginAddressRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'IP address, geolocation and per-account counts; a deleted user stays in users until the retention sweep.',
   },
   {
@@ -1614,7 +1656,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'EMAIL_RECEIPT_METADATA_DAYS', default: 'compacted after 30 days', where: 'server/lib/emailReceiptRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Holds the target userId and the acting admin\'s actorId.',
   },
   {
@@ -1626,7 +1668,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'until deleted (no retention)', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Document _id is the userId; no personal content beyond that.',
   },
   {
@@ -1638,7 +1680,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: 'EMAIL_RECEIPT_METADATA_DAYS', default: 'body removed when sent/cancelled; metadata compacted after 30 days', where: 'server/lib/emailReceiptRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Pending jobs hold the rendered subject and HTML (card titles, comments, names); the payload is $unset on send (server/lib/emailOutbox.js).',
   },
   {
@@ -1650,7 +1692,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'lease expiry (short-lived)', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Keyed by userId; holds no content.',
   },
   {
@@ -1674,7 +1716,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until deleted (no retention)', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Deliberately no TTL (prevents re-appearance after dismissal); { userId, activityId } only.',
   },
   {
@@ -1686,8 +1728,8 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'body removed when sent/cancelled; row kept', where: 'server/lib/webhookOutbox.js' },
     erasure: 'delete',
-    erasureWhere: null,
-    notes: 'Pending bodies carry the activity payload (user names, card text); no user id field to select by, so erasure would need to match the body.',
+    erasureWhere: 'server/lib/webhookOutbox.js',
+    notes: 'Pending bodies carry the activity payload (user names, card text); no user id field to select by, so erasure would need to match the body. The body (names, card text) is $unset when the job finishes, so it is kept only until the webhook it was meant for has been called.',
   },
   {
     collection: 'notificationWebhookLeases',
@@ -1722,7 +1764,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until deleted', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: '',
   },
   {
@@ -1734,7 +1776,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'TTL at expiresAt', where: 'server/passkeys.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Expires by TTL (and is removed when used); no deletion hook needed in practice.',
   },
   {
@@ -1758,7 +1800,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'until deleted', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Read by client/components/users/userAvatar.js; no writer found in the current code (legacy presence package).',
   },
   {
@@ -1770,7 +1812,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: null, default: 'until deleted', where: null },
     erasure: 'anonymize',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Holds username and location of who acted; may hold deletedData (content).',
   },
   {
@@ -1806,7 +1848,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until revoked', where: 'server/sandstormEgress.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Per-user grants (userId, service) are kept after user deletion; webhook/sync grants have no user.',
   },
   {
@@ -1974,7 +2016,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: '1 day', where: 'server/publications/cards.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Short-lived; removed after a day of no use.',
   },
   {
@@ -2022,7 +2064,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'legitimate interest',
     retention: { env: 'LOGIN_ADDRESS_RETENTION_DAYS', default: '365 days', where: 'server/lib/loginAddressRetention.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: '',
   },
   {
@@ -2046,7 +2088,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'TTL at expiresAt', where: 'server/sqrl.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Short-lived, expires by TTL; stores ip and userId/authUserId.',
   },
   {
@@ -2106,7 +2148,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'card lifetime; invoiced entries kept', where: 'server/timeEntries.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'FINANCIAL when invoiced (invoiceId): bookkeeping may require keeping it, then pseudonymise instead. Removed with the card unless invoiced.',
   },
   {
@@ -2130,7 +2172,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'consent',
     retention: { env: null, default: 'until the member clears them', where: 'server/trelloApiImport.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Third-party credentials kept after user deletion: WP-4 gap.',
   },
   {
@@ -2142,7 +2184,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until deleted', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'No removal found for finished jobs.',
   },
   {
@@ -2154,7 +2196,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until the owner deletes the job', where: 'server/trelloApiImport.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Trello key and token are never stored here.',
   },
   {
@@ -2178,7 +2220,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'until saved or discarded', where: null },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: '',
   },
   {
@@ -2190,7 +2232,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: '1000 newest entries per user and board', where: 'server/models/userPositionHistory.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Trimmed daily (models/lib/positionHistoryCleanup.js); checkpoints are kept.',
   },
   {
@@ -2199,12 +2241,25 @@ const INVENTORY = Object.freeze([
     definedBy: 'const Users = Meteor.users;',
     categories: ['identity', 'contact', 'network', 'auth', 'usage'],
     subjectField: '_id',
-    purpose: 'The accounts: username, full name, e-mail addresses, profile and preferences, login services, 2FA/passkey/SQRL metadata, push subscriptions, sign-in addresses.',
+    purpose: 'The accounts: username, full name, e-mail addresses, profile and preferences, login services, 2FA/passkey/SQRL metadata, push subscriptions, sign-in addresses, and which versions of the terms and privacy notice the person accepted (legalAcceptances, WP-8).',
     legalBasisHint: 'contract',
     retention: { env: 'LOGIN_ADDRESS_RETENTION_DAYS', default: 'until the account is deleted; sign-in address entries 365 days', where: 'server/lib/loginAddressRetention.js' },
     erasure: 'delete',
     erasureWhere: 'server/models/users.js',
-    notes: 'Meteor accounts collection (Meteor.users), so no new Mongo.Collection line. removeUser deletes the document and Users.after.remove runs models/lib/userDeletionCleanup.js; anonymizeUser (models/lib/userAnonymization.js) rewrites names and e-mail but keeps loginAddresses, passkeys, sqrl, webPushSubscriptions, ntfy and profile.emailBuffer (WP-4).',
+    notes: 'Meteor accounts collection (Meteor.users), so no new Mongo.Collection line. removeUser deletes the document and Users.after.remove runs models/lib/userDeletionCleanup.js; anonymizeUser (models/lib/userAnonymization.js) rewrites names and e-mail and removes loginAddresses, passkeys, sqrl, webPushSubscriptions, ntfy, profile.emailToCard, profile.emailBuffer and every login token (WP-4); legalAcceptances stays, as it names nobody. LOGIN_ADDRESS_RECORDED=false records no sign-in address at all, and USERS_ANONYMIZE_INACTIVE_AFTER_DAYS anonymises an account that many days after it was disabled for inactivity.',
+  },
+  {
+    collection: 'versionChecks',
+    definedIn: 'server/statistics.js',
+    definedBy: "export const VersionChecks = new Mongo.Collection('versionChecks');",
+    categories: ['none'],
+    subjectField: null,
+    purpose: 'The last result of Check version in Admin Panel / Settings / Version: the newest versions and when, for Problems / Summary.',
+    legalBasisHint: 'n/a',
+    retention: { env: null, default: 'one document, replaced by the next check', where: null },
+    erasure: 'n/a',
+    erasureWhere: null,
+    notes: 'No person in it.',
   },
   {
     collection: 'webPushKeys',
@@ -2227,7 +2282,7 @@ const INVENTORY = Object.freeze([
     legalBasisHint: 'contract',
     retention: { env: null, default: 'TTL at expiresAt', where: 'server/windowsSso.js' },
     erasure: 'delete',
-    erasureWhere: null,
+    erasureWhere: 'models/lib/userErasure.js',
     notes: 'Expires by TTL; _id is the token hash.',
   },
   {
@@ -2237,7 +2292,7 @@ const INVENTORY = Object.freeze([
     subjectField: 'userId, createdBy',
     purpose: 'Absences of a person (vacation, sick, holiday, training, other) for workload planning.',
     legalBasisHint: 'contract',
-    retention: { env: null, default: 'until deleted', where: null },
+    retention: { env: 'WORKLOAD_ABSENCE_RETENTION_DAYS', default: 'until deleted (off unless set); WORKLOAD_ABSENCE_TYPE_RECORDED=false records no sick leave', where: 'server/lib/workloadAbsenceRetention.js' },
     erasure: 'delete',
     erasureWhere: 'server/workload.js',
     notes: 'HEALTH DATA (GDPR Art. 9): type sick. Removed when the user is deleted; no age-based removal.',

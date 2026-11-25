@@ -143,7 +143,10 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  opacity: 0.6;
+  /* Full colour: at 0.6 opacity the heading failed WCAG 1.4.3 contrast
+     (axe, tests/playwright/specs/45-axe-accessibility.e2e.js, WP-13);
+     uppercase and bold already mark it as a heading. */
+  opacity: 1;
   cursor: default;
 }
 .setting-content .content-body .side-menu ul li.left-menu-separator:hover,
@@ -237,7 +240,7 @@
 
    So: fit the panel, wrap the text, and let a genuinely wide table scroll inside
    `.main-body`, which keeps `overflow-x: auto` for exactly that. The shared table
-   page (docs/Features/General/Table-Page.md) already does this for itself - width:100% +
+   page (docs/Features/Table.md) already does this for itself - width:100% +
    table-layout:fixed with equal, wrapping columns - and is excluded so its equal
    columns are not turned back into content-sized ones. */
 .setting-content .content-body .main-body table:not(.table-page-table) {
@@ -994,7 +997,8 @@ li.has-error .form-group .wekan-form-control {
    "Clearly visible, is in use environment variable or admin panel setting"
    (see client/components/settings/settingBody.js's ldapSourceLabelFor). */
 .ldap-source-badge {
-  color: #767676;
+  /* WCAG 1.4.3: #767676 was 3.4:1 on the Admin Panel's #dedede; #555 is 5.5:1. */
+  color: #555;
   font-size: 0.85em;
   font-style: italic;
 }
@@ -1012,10 +1016,35 @@ li.has-error .form-group .wekan-form-control {
    with an update and waits for approval. */
 #tableVisibilityMode-setting .feature-desc {
   margin: 0 0 0.5em 2.2em;
-  opacity: 0.75;
+  /* WCAG 1.4.3: a solid colour instead of opacity 0.75, which faded it to
+     3.1:1 on the Admin Panel's #dedede; #4f5156 is 5.9:1 there. */
+  color: #4f5156;
   font-size: 0.9em;
 }
 #tableVisibilityMode-setting .feature-awaiting-approval {
   margin-inline-start: 0.5em;
   font-weight: bold;
+}
+
+/* WCAG 2.5.8 Target Size (Minimum): a ticked row of the Admin Panel - a
+   materialCheckBox and its text inside one link (account webhook events and
+   fields, custom role capabilities, notification Yes/No) - was 18px tall with
+   12px to the next one. 24px is the minimum, so every such row is at least
+   that tall; the notification options get it in their popup too. */
+.setting-content a.flex:has(> .materialCheckBox),
+a.flex.js-notify-option {
+  min-height: 24px;
+  align-items: center;
+}
+
+/* The "Select all" / "Unselect all" icons in the Organizations and Teams table
+   headers were 12x16px. */
+a.js-org-feature-all,
+a.js-team-feature-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  vertical-align: middle;
 }

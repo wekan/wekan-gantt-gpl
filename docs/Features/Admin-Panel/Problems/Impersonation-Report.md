@@ -13,8 +13,8 @@ refuses, for anybody who is not `isAdmin`.
 
 - [Audit trail](https://en.wikipedia.org/wiki/Audit_trail) - a record of who
   did what, and when.
-- WeKan: [People](../People/People.md) - where impersonation starts;
-  [table page](../../General/Table.md); [REST API](../../../API/REST-API.md).
+- WeKan: [People](../People/README.md) - where impersonation starts;
+  [table page](../../Table.md); [REST API](../../../API/REST-API.md).
 
 ## How to use it
 
@@ -56,6 +56,7 @@ is written when:
 | Reason | Written when |
 | --- | --- |
 | `clickedImpersonate` | an administrator impersonates a user from Admin Panel / People (the `impersonate` method) |
+| `emergency: <note>` | an administrator ticked **Emergency access** before Impersonate in Admin Panel / People; the note says why, and every other administrator got an e-mail at that moment (`models/lib/emergencyAccess.js`) |
 | `restCreateToken: <reason>` | an administrator creates a login token for another user through the REST API; the reason is required and kept, up to 500 characters |
 | `exportJSON`, `exportJSONattachment`, `exportExcel`, `exportExcelCard`, `exportCardPDF`, or the export type | a board, card or attachment is exported while impersonating, with the board it was exported from |
 
@@ -65,7 +66,7 @@ The export rows are written by [models/export.js](../../../../models/export.js),
 [models/exportPDF.js](../../../../models/exportPDF.js); the other two by
 [server/models/users.js](../../../../server/models/users.js).
 
-The table is the shared [table page](../../General/Table.md), fetched one page
+The table is the shared [table page](../../Table.md), fetched one page
 at a time from the server
 ([server/publications/impersonationReport.js](../../../../server/publications/impersonationReport.js):
 the `impersonationReport` publication and the `getImpersonationReportCount`

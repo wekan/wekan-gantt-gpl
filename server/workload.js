@@ -1,4 +1,4 @@
-// Workload and capacity planning (docs/Features/Workload/Workload.md).
+// Workload and capacity planning (docs/Features/Workload/README.md).
 //
 // The page asks for a REPORT - computed here by models/lib/workload.js - rather
 // than subscribing to cards: a report over every board of a team would
@@ -257,7 +257,9 @@ Meteor.methods({
     if (target !== userId && !(await siteAdmin(userId))) denied();
     const value = validated(() => normalizeAbsence(absence));
     if (await WorkloadAbsences.find({ userId: target }).countAsync() >= 1000) invalid(new Error('Too many absences'));
-    return await WorkloadAbsences.insertAsync({ userId: target, ...value, createdBy: userId });
+    // WORKLOAD_ABSENCE_TYPE_RECORDED=false (WP-7): no sick leave is recorded.
+    const { storedAbsenceType } = require('/models/lib/retentionSettings');
+    return await WorkloadAbsences.insertAsync({ userId: target, ...value, type: storedAbsenceType(value.type, { WORKLOAD_ABSENCE_TYPE_RECORDED: process.env.WORKLOAD_ABSENCE_TYPE_RECORDED }), createdBy: userId });
   },
 
   async workloadRemoveAbsence(absenceId) {

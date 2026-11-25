@@ -16,10 +16,18 @@ const STREAM_LABEL_KEY = {
   cpu: 'cpuReportTitle',
   ram: 'memory-usage',
   disk: 'sandstorm-disk-usage',
+  // These three showed their stream id - "database", "integrity", "mail" -
+  // instead of the name of their pane. The keys are the ones PROBLEMS_MENU in
+  // adminProblems.js names the panes with; tests/problemsSummaryLabels.test.cjs
+  // keeps every stream of EVENT_STREAMS here, with the menu's key.
+  database: 'databaseReportTitle',
+  integrity: 'integrityReportTitle',
+  mail: 'mailReportTitle',
 };
 
 Template.problemsSummary.onCreated(function () {
   this.areas = new ReactiveVar([]);
+  this.loginRefusals = new ReactiveVar([]);
   // "Broken cards N" repair button state (see the repairBrokenCards method in
   // server/methods/repairBrokenCards.js).
   this.repairRunning = new ReactiveVar(false);
@@ -39,6 +47,9 @@ Template.problemsSummary.onCreated(function () {
   this.dataHealthResults = new ReactiveVar({});
   this.dataHealthScanRequested = new ReactiveVar(false);
   this.reload = () => {
+    Meteor.call('loginRefusalSummary', (err, res) => {
+      if (!err) this.loginRefusals.set(Array.isArray(res) ? res : []);
+    });
     Meteor.call('eventLogProblemAreas', (err, res) => {
       if (!err) this.areas.set(Array.isArray(res) ? res : []);
     });
@@ -57,6 +68,15 @@ Template.problemsSummary.onDestroyed(function () {
 Template.problemsSummary.helpers({
   areas() {
     return Template.instance().areas.get();
+  },
+  loginRefusals() {
+    return Template.instance().loginRefusals.get();
+  },
+  paneHref(pane) {
+    return Array.isArray(pane) ? require('/models/lib/adminUrls').adminPath(pane[0], pane[1]) : '';
+  },
+  when(at) {
+    return at ? new Date(at).toLocaleString() : '';
   },
   hasProblems() {
     return (Template.instance().areas.get() || []).length > 0;
@@ -145,7 +165,8 @@ Template.problemsSummary.events({
         (res.cardsRescued || 0) +
         (res.archivedCardsFixed || 0) +
         (res.listsAssigned || 0) +
-        (res.swimlanesAssigned || 0);
+        (res.swimlanesAssigned || 0) +
+        (res.typesAssigned || 0);
       // Cards with no boardId at all cannot be placed on any board, so say so
       // explicitly instead of leaving a count that never reaches zero unexplained.
       const unfixable = res.unfixable || 0;

@@ -1,0 +1,34 @@
+.legal-page {
+  max-width: 50em;
+  margin: 1.5em auto;
+  padding: 0 1em;
+}
+.legal-page-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25em 1em;
+}
+.legal-page-fields dt {
+  font-weight: bold;
+}
+.legal-page-fields dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.legal-page-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1.25em;
+  margin: 1.5em 0 0.5em;
+}
+.legal-inventory-table {
+  overflow-x: auto;
+}
+.legal-inventory-table td {
+  vertical-align: top;
+  padding: 0.2em 0.5em;
+}
+
+/* Admin Panel / Settings / Legal pages: each editor's heading, an h2 under the
+   pane title (heading order, WP-13), at the size the h3 had. */
+.legal-page-editor-title { font-size: 1.17em; margin-block: 1em 0.5em; }

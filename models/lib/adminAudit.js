@@ -28,7 +28,7 @@ const AUDIT_KEEP_DAYS = 365;
 const AUDITED_METHODS = [
   // People
   'setCreateUser', 'setPassword', 'setUsername', 'setEmail', 'setUsernameAndEmail',
-  'setEmailVerified', 'setInitials', 'editUser', 'removeUser', 'impersonate',
+  'setEmailVerified', 'setInitials', 'editUser', 'removeUser', 'impersonate', 'adminLogoutUser', 'setEncryptNewAttachments', 'encryptAllAttachments', 'decryptAllAttachments',
   'adminSetAvatarUrl', 'unlockUser', 'unlockAllUsers', 'mergeImportedUser',
   'sendInvitation', 'setUserOrgsTeamsFromLdap', 'ldap_sync_now',
   // Organizations and teams
@@ -48,6 +48,8 @@ const AUDITED_METHODS = [
   'cleanupUnusedTemplateContainers', 'sandstormDeleteRawMongo', 'setRecoveryMaintenance',
   // Personal data (docs/Compliance/README.md WP-1)
   'anonymizeUser',
+  // Legal pages and privacy contacts (WP-6)
+  'saveLegalPage', 'saveLegalContacts',
 ];
 
 // The collections the Admin Panel writes straight from the browser - Settings

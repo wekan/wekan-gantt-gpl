@@ -113,6 +113,27 @@ AccountsTemplates.addFields([
     minLength: 6,
     template: 'invitationCode',
   },
+  // WP-8: "I accept the terms of use and the privacy notice", shown only while
+  // a page requires acceptance (client/components/legal/legalAcceptance.*).
+  // Optional on purpose: an account that does not tick it is asked after
+  // signing in, and the server refuses everything else until it accepts.
+  // REGISTRATION_MINIMUM_AGE (models/lib/registrationAge.js): "I am at least
+  // N years old", shown only while it is set; the server refuses a sign-up
+  // without it.
+  {
+    _id: 'confirmAge',
+    type: 'checkbox',
+    displayName: () => tr('registration-minimum-age'),
+    required: false,
+    template: 'registrationAgeSignup',
+  },
+  {
+    _id: 'acceptLegal',
+    type: 'checkbox',
+    displayName: () => tr('legal-acceptance-signup'),
+    required: false,
+    template: 'legalAcceptanceSignup',
+  },
 ]);
 
 // PASSWORD_MIN_LENGTH and PASSWORD_CHECK_PWNED (models/lib/passwordPolicy.js).

@@ -44,6 +44,7 @@ The bare `/admin/settings` still resolves; it *redirects* to
 | `/admin/settings/delete` | Delete | `delete-setting` |
 | `/admin/settings/announcement` | Announcement | `announcement-setting` |
 | `/admin/settings/accessibility` | Accessibility | `accessibility-setting` |
+| `/admin/settings/privacy` | Legal pages | `legal-pages-setting` |
 | `/admin/settings/translation` | Translation | `translation-setting` |
 | `/admin/settings/pwa` | PWA | `layout-setting` |
 | `/admin/settings/global-webhooks` | Global Webhooks | `webhook-setting` |
@@ -80,6 +81,7 @@ OAuth providers and Passwordless login each have their own menu entry.
 | URL | Pane | Pane id |
 | --- | --- | --- |
 | `/admin/problems/summary` | Summary | `report-summary` |
+| `/admin/problems/compliance` | Compliance (a read-only checklist, WP-12) | `report-compliance` |
 | `/admin/problems/backup` | Backup (status and history; settings stay in Attachments / Backup) | `features-backup` |
 | `/admin/problems/security-report` | Security Report | `report-security` |
 | `/admin/problems/impersonation` | Impersonation Report | `report-impersonation` |
@@ -119,6 +121,7 @@ pane and the *report*. `security` is the settings one, in Settings beside
 | `/admin/attachments/default-save-storage` | Default Save Storage | `default-save-storage` |
 | `/admin/attachments/limits` | Limits | `limits` |
 | `/admin/attachments/retention` | Retention: delete old attachments, purge deleted ones (#6789) | `retention` |
+| `/admin/attachments/encrypt` | Encrypt: the attachments on disk, only while ATTACHMENTS_PASSPHRASE is set | `encrypt` |
 | `/admin/attachments/gridfs` | MongoDB GridFS Storage | `gridfs` |
 | `/admin/attachments/filesystem` | Filesystem Storage | `filesystem` |
 | `/admin/attachments/s3` | S3/MinIO Storage | `s3` |
@@ -255,7 +258,7 @@ instead of in two places that can disagree.
 ## Related
 
 - [Left menu](../All-Boards/Left-Menu.md) — the menu these URLs open
-- [The Table page design](../General/Table.md) — what most of these panes render
+- [The Table page design](../Table.md) — what most of these panes render
 
 ## Commits
 
