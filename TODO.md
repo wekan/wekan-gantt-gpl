@@ -15,97 +15,68 @@ the changelog only says what changed.
 
 `tests/todoFile.test.cjs` checks this shape.
 
-**Where things are** (2026-11-23). Each repository's own TODO.md has the
+**Where things are** (2026-11-24). Each repository's own TODO.md has the
 details; WeKan's are below.
 
 | Repository | In progress, or not verified yet | Needs a person |
 | --- | --- | --- |
-| WeKan | The help button's Playwright spec; the test build that runs out of memory; wrong-language words in some locales; laws and standards WP-4 onwards; accessibility; the docs folders | Push |
+| WeKan | - | The Firefox and WebKit stages, on a host; push the security fixes of ferretdb-test, hx, minio-metadata, trello-attachments-downloader and the caddy plugins; Dependabot off in 16 repositories; the dev-only glob 13 |
 | [gitea-patches](https://github.com/wekan/gitea-patches/blob/main/TODO.md) | 90 new upstream Gitea strings not yet in Finnish | Run "Migrate all Gitea to backups" with `--dry-run` first |
-| [omi](https://github.com/wekan/omi/blob/main/TODO.md) | Delete and import not yet run on a real Gitea folder or against the real GitHub; the import has no reactions, review comments, LFS, Actions or fork branches | Push; stop and back up Gitea before the first real write |
+| [omi](https://github.com/wekan/omi/blob/main/TODO.md) | Delete and import not yet run on a real Gitea folder or against the real GitHub; the import has no reactions, review comments, LFS, Actions or fork branches | Stop and back up Gitea before the first real write |
 | [welite](https://github.com/wekan/welite/blob/main/TODO.md) | WeKan data folders: no zip archives, GridFS or object-storage downloads, avatars or cross-target builds yet; retro-browser acceptance | - |
 | [weddy](https://github.com/wekan/weddy/blob/main/TODO.md) | 20 of WeKan's 174 templates in Go; attachments' Office preview and WebP thumbnails; more of WeKan's specs; Firefox and WebKit; netbsd/arm64 | Its "For the maintainer (on GitHub)" items |
-| [caddy-ferretdb-plugin](https://github.com/wekan/caddy-ferretdb-plugin/blob/main/TODO.md) | The Windows SQLite URI fix, checked on Linux only | Close the otel Dependabot alert |
-| [caddy-wekan-plugin](https://github.com/wekan/caddy-wekan-plugin/blob/main/TODO.md) | Weddy behind WeKan's newest settings; the Windows fixes, checked on Linux only | Close the otel Dependabot alert |
+| [caddy-ferretdb-plugin](https://github.com/wekan/caddy-ferretdb-plugin/blob/main/TODO.md) | The Windows SQLite URI fix, checked on Linux only | Push the otel ignore rule |
+| [caddy-wekan-plugin](https://github.com/wekan/caddy-wekan-plugin/blob/main/TODO.md) | Weddy behind WeKan's newest settings; the Windows fixes, checked on Linux only | Push the otel ignore rule |
 | [node-patches](https://github.com/wekan/node-patches/blob/main/TODO.md) | The clone retry, until the next Release All | - |
 | [wekango](https://github.com/wekan/wekango/blob/main/TODO.md) | The Windows and macOS fixes, checked on Linux only | Confirm the mongo-tools notice review |
-| [weror](https://github.com/wekan/weror/blob/main/TODO.md) | - | Decide on the demo account that takes any password; close the rack Dependabot pull request |
-| [wekan.fi](https://github.com/wekan/wekan.fi/blob/main/TODO.md) | - | Rerun the Pages deploy |
+| [weror](https://github.com/wekan/weror/blob/main/TODO.md) | - | Decide on the demo account that takes any password |
+| [wekan.fi](https://github.com/wekan/wekan.fi/blob/main/TODO.md) | - | - |
 | [wekan-meteor3-html4](https://github.com/wekan/wekan-meteor3-html4/blob/main/TODO.md) | Left out for now | - |
-| wena | aros-i386 without AHI audio | Rerun Release all for haiku-amd64 |
+| wena | aros-i386 without AHI audio | Rerun Release all for haiku-amd64; Release desktop's linux-armel and linux-mips64le |
 | wepica | Left out: too old | - |
-
-## In progress
-
-Work being done now. Each item moves to the `# Upcoming WeKan ® release`
-section of `CHANGELOG-big.md`, and to the docs, when it is committed.
-
-- The help button (?): its Playwright spec `feature-help.e2e.js` has not been
-  run yet. The button, its texts and their translations into every language
-  are released (v13.28).
-- The Meteor test build (`meteor test --full-app`) ran out of memory before
-  any test started after the help texts grew every locale file; the release
-  build (`meteor build`) still works. To find out why and fix it, then run
-  the Shop, webhooks and Admin Panel addresses server tests, and their
-  Playwright specs in Firefox and WebKit.
-- Wrong-language and wrong-meaning words seen by the help-text translators,
-  to correct now that the help texts are translated: Latvian (`lv`) has
-  Lithuanian words; Estonian (`et-EE`) calls a board "juhatus" (a company's
-  management board) in "Board Settings" and "Board View"; Aromanian (`rup`)
-  and Sicilian (`scn`) have Italian menu names; Northern Sami (`se`) has two
-  Finnish values; Shona (`sn`) has half-English menu names; Brazilian
-  Portuguese (`pt-BR`) calls an assignee "Administrador"; Somali (`so`) calls
-  card recurrence an automatic reset; Pashto and Sindhi (`ps`, `sd`) have odd
-  "Check Version" and "WIP Limit Groups" terms; Serbian (`sr`) uses списи,
-  предмет and Управа for board, card and Admin Panel; Macedonian (`mk`) has
-  Bulgarian values (Хора, Наблюдавай, Имейл, Описание, Разпределена от,
-  Поискан от); Luxembourgish (`lb`) is partly German; Punjabi and Odia (`pa`,
-  `or_IN`) call a swimlane "swimming"; Maltese (`mt`) has "Bord Ara" for
-  Board View.
-- The docs folders keep their main page as `README.md` instead of a page named
-  after the folder, and `docs/Features/README.md` holds the website's feature
-  overview. Every topic in one folder at the `docs/Features/` level: the
-  `General/` level goes, its folders move up into the same-named folders, and
-  the folders of `# Moved` stubs are removed, with every link updated.
-- Everything about accessibility in one folder, `docs/Features/Accessibility/`
-  (from `General/Accessibility/` and the Admin Panel's Accessibility page).
-- Accessibility: every missing WCAG 2.2 AA feature added, and the accessibility
-  tests extended to every page, popup and Admin Panel pane - axe with the WCAG
-  2.2 rules, keyboard-only use, visible focus, 200 % zoom and 320 px reflow,
-  target size, reduced motion and every theme's contrast - run through build.sh.
-- Laws and standards - GDPR, NIS2, ISO 27001, HIPAA and the others - checked
-  against what WeKan already has (`docs/Compliance/`). Done: the complete admin
-  audit log (WP-1), retention of sign-in addresses (WP-2) and the
-  personal-data inventory (WP-3). Next: complete erasure (WP-4, the 40
-  collections the inventory lists), a personal-data export (WP-5), legal pages
-  with accepted versions (WP-6), then WP-7 to WP-14.
-- Found while documenting, to fix: the per-address login delay is never
-  applied; Broken Cards counts unknown card types in its list but not in the
-  Summary or its repair; the database, integrity and mail streams have no name
-  in the Summary; the Recovery pane's text says it does not retry or cancel;
-  the attachment retention form allows a larger per-run number than the
-  retention applies.
 
 ## For the maintainer: needs a person, not code
 
-- Push `main` here and in the `.tools/w/` repositories with local commits:
-  omi and wekan.fi.
-- Dependabot pull requests and alerts to close by hand: the
-  go.opentelemetry.io/otel/sdk/log update in caddy-ferretdb-plugin and
-  caddy-wekan-plugin (Dependabot cannot resolve their local `replace`, and the
-  version is already on main), weror's rack-3.1.21 branch (main has rack
-  3.2.9), nekan alert 207 and caddy-gitea-plugin alerts 1, 2, 4, 18, 24, 25
-  and 37.
+- Push the security fixes committed locally on 2026-11-24, which close every
+  open Dependabot and CodeQL alert of the newest download once GitHub
+  re-scans: ferretdb-test (93, `a3b3058`), minio-metadata (5, `1ce090d`), hx
+  (47 Dependabot and 4 CodeQL, `02e5451` to `8f4699e` - htmx kept at 2.0.11, as
+  4.x drops the `htmx:afterOnLoad` event the fullmoon board uses) and
+  trello-attachments-downloader (6, and current upload/download-artifact,
+  `9c65a9f`). hx's two htmx CodeQL alerts may come back on the new copy, as
+  htmx still parses HTML and checks `javascript:` the same way: dismiss them as
+  vendored code if they do. nekan has 1 high its Dependabot does not list as
+  open (zod below 4.6.6, GHSA-mrhx-c7xc-m3w5).
+- Dependabot is still off (403) in 16 repositories: migratemongo,
+  minio-express, waxe, we, webhook, wedos, wekan-aws, wekan-gantt-gpl,
+  wekan-ondra, wekan-openstore, wekan-openstore2, wekan-prometheus-exporter,
+  wekan-sandstorm-meteor3, wekan-test-alpha, wekanstudio and wodello. Of those,
+  we and wekan-sandstorm-meteor3 have a medium Babel advisory
+  (GHSA-968p-4wvh-cqc8, @babel/helpers and @babel/runtime below 7.26.10).
+- caddy-ferretdb-plugin and caddy-wekan-plugin: push the `.github/dependabot.yml`
+  that ignores go.opentelemetry.io/otel/sdk/log, whose update fails on every run
+  (`42c839f`, `cdab5e43`).
 - wena: rerun Release all for haiku-amd64 (the Haiku VM never answered SSH);
   aros-i386 needs SDL's AHI audio driver off for i386, whose AROS toolchain has
-  no AHI headers - not cloned or built here, as there is no Docker.
-- wekan.fi: rerun "Deploy static content to Pages", which failed with a 500
-  from GitHub's Pages API after its checks passed.
+  no AHI headers - not cloned or built here, as there is no Docker. Its
+  "Release desktop" also failed (2026-10-03, not run since): linux-armel and
+  linux-mips64le stopped with exit code 125 in their Docker emulation step.
 - weror: decide whether the demo account `user@demo.test` may sign in with any
   password, as its tests ask; restored as tested, and a risk if weror is
   public.
 - wekango: confirm the review of the new mongo-tools license notices (only
   permissive attributions changed).
+
+## Needs a maintainer decision on the intended contract
+
+
+- WeKan's dev-only `glob` 13.0.6 under `@babel/cli`, which builds the vendored
+  `npm-packages/`, is in the range of GHSA-3g3m-2fjr-6pw4 (medium,
+  CVE-2026-118773: 9.0.0 to 14.0.1). The bundle's own `glob` is 14.0.3, which
+  is patched. `@babel/cli` 8.0.6 asks for `^13.0.0`, and the advisory names no
+  patched 13 (13.0.7 is inside its range), so the fix is an override to glob
+  14 - a major version over what `@babel/cli` asks for - or waiting for a
+  `@babel/cli` that takes 14.
 
 ## Repositories left out, and why
 
@@ -121,6 +92,12 @@ section of `CHANGELOG-big.md`, and to the docs, when it is committed.
 
 - The WebKit stage cannot run in the Flatpak sandbox: MiniBrowser needs its own
   sandbox, and turning that off is not allowed there. Run it on a host.
+- Firefox cannot run in the Flatpak sandbox either: Playwright's Firefox 159
+  needs NSS 3.126, newer than the runtime's, and with a newer NSS supplied it
+  still crashes, as its own sandbox cannot create a user namespace there -
+  the same as WebKit, and turning that sandbox off is not allowed. Run the Firefox stage on a host -
+  in particular the Shop, webhooks, Admin Panel addresses and accessibility
+  (47) specs, which pass in Chromium.
 
 ## Need accounts on the tools, or a running copy of one
 

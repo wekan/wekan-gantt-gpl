@@ -75,6 +75,12 @@ function loadServer(storedUsers, { failInsert = false } = {}) {
     require: p => {
       if (p === '/models/lib/adminAudit') return audit;
       if (p === '/server/lib/loginAttemptThrottle') return { resolveClientKey: ({ socketAddress }) => socketAddress };
+      if (p === '/models/lib/auditStdout') return require('../models/lib/auditStdout');
+      // The hash chain (models/lib/auditChain.js, tests/auditChain.test.cjs):
+      // here, the row as it is appended.
+      if (p === '/server/lib/auditChainAppend') {
+        return { appendAuditRow: async doc => { if (failInsert) throw new Error('db down'); trail.push(doc); return doc; } };
+      }
       return require(p);
     },
     module: { exports: {} },
@@ -166,9 +172,17 @@ test('the Admin Panel\'s own collection writes are audited: every one is a site-
 test('the trail is for site administrators, and the Admin Panel shows it', () => {
   const server = read('server/adminAudit.js');
   assert.match(server, /user\.isAdmin !== true \|\| user\.loginDisabled === true\) throw new Meteor\.Error\('error-notAuthorized'\)/);
-  assert.match(server, /AUDIT_KEEP_DAYS \* DAY_MS/, 'kept for a year, then removed');
+  // Kept ADMIN_AUDIT_RETENTION_DAYS (WP-7, 2026-11-24) - a year by default,
+  // AUDIT_KEEP_DAYS - then removed; tests/retentionSettings.test.cjs pins the days.
+  assert.match(server, /cutoffDate\(retentionDays\('ADMIN_AUDIT_RETENTION_DAYS', \{ ADMIN_AUDIT_RETENTION_DAYS: process\.env\.ADMIN_AUDIT_RETENTION_DAYS \}\)\)/, 'kept for the configured days');
+  assert.match(server, /AdminAuditLog\.removeAsync\(\{ at: \{ \$lt: cutoff \} \}\)/, 'then removed');
+  assert.equal(require('../models/lib/retentionSettings').retentionDays('ADMIN_AUDIT_RETENTION_DAYS', {}), audit.AUDIT_KEEP_DAYS, 'a year by default');
   assert.match(read('server/imports.js'), /import '\/server\/adminAudit';/);
-  assert.match(read('client/components/settings/adminAuditLog.js'), /Meteor\.call\('adminAuditLogPage'/);
+  // The pane has two tabs since WP-11 - the audit log and Data access - and
+  // calls the method of the open one; the audit log is still the first.
+  const pane = read('client/components/settings/adminAuditLog.js');
+  assert.match(pane, /const method = this\.tab\.get\(\) === 'access' \? 'adminDataAccessPage' : 'adminAuditLogPage';\s*this\.loading\.set\(true\);\s*Meteor\.call\(method,/);
+  assert.match(pane, /this\.tab = new ReactiveVar\('audit'\);/);
   assert.match(read('client/components/settings/peopleBody.js'), /id: 'audit-log-setting'/);
   assert.match(read('client/components/settings/peopleBody.jade'), /\+adminAuditLog/);
 });

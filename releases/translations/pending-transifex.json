@@ -6071,6 +6071,506 @@
     {
       "key": "billing-line-product",
       "since": "2026-11-22"
+    },
+    {
+      "key": "download-my-data",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "privacy-and-my-data",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "privacy-notice",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "terms-of-use",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "cookie-notice",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-pages",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-page-published",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-page-text",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-page-external-url",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-page-version",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-page-not-published",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-name",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-legal-form",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-representative",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-address",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-phone-or-form",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-register",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-register-number",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-vat-id",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-supervisory-authority",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-professional-rules",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "imprint-media-disclosure",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "privacy-contacts",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "privacy-contact",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "dpo-contact",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "eu-representative",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "security-contact",
+      "since": "2026-11-23"
+    },
+    {
+      "key": "legal-privacy-draft",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "data-inventory",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "privacyAndMyDataPopup-title",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-page-require-acceptance",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-acceptance-title",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-acceptance-text",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-acceptance-accept-page",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-acceptance-accept",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-acceptance-changed",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "legal-acceptance-signup",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "export-csv",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "export-csv-board-roles",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "my-login-history",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "data-access",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "data-access-info",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "data-access-what",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "data-access-times",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "data-access-empty",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-info",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-2fa-admins",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-idle-logout",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-https",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-login-retention",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-audit-retention",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-privacy-published",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-imprint-published",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-security-contact",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-backup-encrypted",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-ok",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-check",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "compliance-for-information",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "impersonate-emergency",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "impersonate-emergency-note",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "email-emergency-access-subject",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "email-emergency-access-text",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "registration-minimum-age",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "error-minimum-age",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "ropa-draft",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "my-sessions",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "session-this-browser",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "session-signed-in",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "session-end",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption-info",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption-new",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption-counts",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption-encrypt-all",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption-decrypt-all",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "attachment-encryption-progress",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refusals",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-bad-password",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-bad-password-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-unknown-user",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-unknown-user-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-account-disabled",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-account-disabled-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-braked",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-braked-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-malformed-credentials",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-malformed-credentials-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-bad-credentials",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-bad-credentials-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-not-in-allowed-group",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-not-in-allowed-group-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-account-not-linked",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-account-not-linked-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-bound-to-another-entry",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "login-refused-ldap-bound-to-another-entry-fix",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-token-test",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-token-works",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-token-requests-left",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-token-rejected",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-token-refused",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-token-unreachable",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-job-stop",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-job-stop-requested",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-filter-all",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-filter-show",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-filter-failed",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-filter-deleted",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-id",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-archived",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-avg-ms",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-max-ms",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-card-title",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-mime-type",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-method",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-permission",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-rule-title",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-size-kb",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "problems-col-user-id",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "admin-email-service",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "admin-email-settings-enable",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-job-progress",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-job-newest-lines",
+      "since": "2026-11-24"
+    },
+    {
+      "key": "gitea-job-errors",
+      "since": "2026-11-24"
     }
   ]
 }

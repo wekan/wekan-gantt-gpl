@@ -6,7 +6,7 @@
 // arithmetic; the nightly job is server/attachmentRetention.js.
 //
 // Two steps, both off by default, that follow WeKan's attachment design
-// (docs/Features/General/History/History.md §12):
+// (docs/Features/History/README.md §12):
 //
 //   ATTACHMENTS_RETENTION_DAYS            expired attachments are SOFT-deleted,
 //                                         exactly like "Delete" on a card: the
@@ -161,6 +161,7 @@ module.exports = {
   MODE_UPLOADED,
   MODE_CARD_INACTIVE,
   DEFAULT_MAX_PER_RUN,
+  MAX_MAX_PER_RUN,
   normalizeRetentionDays,
   normalizeRetentionMode,
   normalizeBoolean,

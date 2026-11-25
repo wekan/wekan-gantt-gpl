@@ -23,7 +23,8 @@ template(name="memberMenuPopup")
     with currentUser
       //- #6732: at the top - Show My / Show Board Dependencies, Import, Export.
       +memberDependencyMenuItems
-      hr
+      li.pop-over-list-separator
+        hr
       li
         a.js-my-cards(href="{{pathFor 'my-cards'}}")
           i.fa.fa-list
@@ -73,11 +74,10 @@ template(name="memberMenuPopup")
             i.fa.fa-question-circle
             | {{_ 'help'}}
       unless currentUser.isWorker
-        ul.pop-over-list
-          li
-            a(href="{{pathFor 'allboards-templates'}}")
-              i.fa.fa-list
-              | {{_ 'templates'}}
+        li
+          a(href="{{pathFor 'allboards-templates'}}")
+            i.fa.fa-list
+            | {{_ 'templates'}}
       //- Multitenancy option D (D.7): the Admin Panel link is also for a per-tenant
       //- Global Admin, whose panel is the same one with only their own
       //- Organization's panes in it. A site admin lands on Settings as before; a
@@ -93,7 +93,8 @@ template(name="memberMenuPopup")
           a.js-go-setting(href="{{pathFor 'people'}}")
             i.fa.fa-lock
             | {{_ 'admin-panel'}}
-      hr
+      li.pop-over-list-separator
+        hr
       if isSameDomainNameSettingValue
         li
           a.js-invite-people
@@ -104,6 +105,11 @@ template(name="memberMenuPopup")
           a.js-edit-profile
             i.fa.fa-user
             | {{_ 'edit-profile'}}
+      //- WP-6: the legal pages and the person's own data, in one place.
+      li
+        a.js-privacy-and-my-data
+          i.fa.fa-user-secret
+          | {{_ 'privacy-and-my-data'}}
       li
         a.js-member-date-settings
           i.fa.fa-calendar
@@ -529,3 +535,43 @@ template(name="userAnonymizePopup")
   unless currentUser.isWorker
     p {{_ 'anonymize-account-confirm-popup'}}
     button.js-confirm.negate.full(type="submit") {{_ 'anonymize-account'}}
+
+//- WP-6: Member Settings / Privacy and my data - the published legal pages and
+//- "Download my data" (WP-5, server/routes/personalDataExport.js: everything
+//- WeKan holds about the signed-in person, as a ZIP of JSON; for every account,
+//- the right of access is not a setting).
+template(name="privacyAndMyDataPopup")
+  ul.pop-over-list
+    li
+      a.js-download-my-data(href="{{myDataUrl}}" download)
+        i.fa.fa-download
+        | {{_ 'download-my-data'}}
+  +legalPageLinks
+  +legalAcceptancesList
+  //- P3: every session of this account - when it signed in, and when last
+  //- active where idle logout records it - each with Sign out
+  //- (server/methods/sessions.js, models/lib/sessionList.js).
+  if mySessions.length
+    h4.privacy-sessions-title {{_ 'my-sessions'}}
+    ul.privacy-sessions
+      each mySessions
+        li
+          if current
+            strong {{_ 'session-this-browser'}}
+            |  · 
+          | {{_ 'session-signed-in' date=(date when)}}
+          if lastActiveAt
+            |  · {{date lastActiveAt}}
+          |  
+          button.js-end-session(type="button" data-session="{{id}}") {{_ 'session-end'}}
+  //- WP-10: where this account signed in from, how often, first and last
+  //- (getMyLoginHistory, server/methods/loginOffices.js).
+  if myLoginHistory.length
+    h4.privacy-login-history-title {{_ 'my-login-history'}}
+    ul.privacy-login-history
+      each myLoginHistory
+        li
+          code {{address}}
+          if locationLabel
+            |  {{locationLabel}}
+          |  · {{logins}} · {{date firstAt}} – {{date at}}

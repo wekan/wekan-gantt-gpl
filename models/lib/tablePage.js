@@ -1,4 +1,4 @@
-// Pure helpers behind the shared table page (docs/Features/General/Table.md).
+// Pure helpers behind the shared table page (docs/Features/Table.md).
 //
 // Every paginated admin table — Security, Speed, Tests, CPU usage, Files, Rules,
 // Boards, Cards, Impersonation, Recovery — renders through ONE template driven by
@@ -206,6 +206,9 @@ export function buildFilters(filters, current) {
   return list.filter(Boolean).map(filter => ({
     id: filter.id || '',
     labelKey: filter.labelKey || '',
+    // A filter without an i18n key names itself with a plain label; dropping
+    // it left the <select> with no accessible name (WCAG 4.1.2, spec 47).
+    label: filter.label || '',
     options: (Array.isArray(filter.options) ? filter.options : [])
       .filter(Boolean)
       .map(option => ({

@@ -1,6 +1,7 @@
 import '/client/components/settings/adminProblems.jade';
 import '/client/components/settings/adminAuditLog.jade';
 import '/client/components/settings/attachments.jade';
+import '/client/components/settings/attachmentEncryption.jade';
 // Backup status and history, shared by Attachments / Backup and Problems / Backup.
 import '/client/components/settings/backupRunsStatus.jade';
 import '/client/components/settings/connectionMethod.jade';
@@ -22,6 +23,7 @@ import '/client/components/settings/translationBody.jade';
 
 import '/client/components/settings/adminProblems.js';
 import '/client/components/settings/attachments.js';
+import '/client/components/settings/attachmentEncryption.js';
 import '/client/components/settings/backupRunsStatus.js';
 import '/client/components/settings/connectionMethod.js';
 import '/client/components/settings/informationBody.js';
@@ -52,6 +54,8 @@ import '/client/components/settings/problemsSummary.jade';
 import '/client/components/settings/problemsSummary.js';
 import '/client/components/settings/passwordLengthReport.jade';
 import '/client/components/settings/passwordLengthReport.js';
+import '/client/components/settings/complianceReport.jade';
+import '/client/components/settings/complianceReport.js';
 // Admin Panel / Problems / Webhooks: every webhook and who added it.
 import '/client/components/settings/webhooksReport.jade';
 import '/client/components/settings/webhooksReport.js';
@@ -67,6 +71,7 @@ import '/client/components/settings/translationBody.js';
 // the prev/next pagination buttons fell back to the global `button` rule in
 // forms.css and rendered with a black/grey background instead of the theme.
 import '/client/components/settings/adminProblems.css';
+import '/client/components/settings/complianceReport.css';
 import '/client/components/settings/attachments.css';
 import '/client/components/settings/informationBody.css';
 import '/client/components/settings/lockedUsersBody.css';

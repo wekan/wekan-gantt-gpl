@@ -246,7 +246,7 @@ template(name="peopleRow")
         | ⋯
     if userData.loginDisabled
       td.username
-        a.js-edit-people-avatar(data-user-id=userData._id)
+        a.js-edit-people-avatar(data-user-id=userData._id aria-label="{{#unless hasAvatarUrl}}{{userData.getInitials}} {{/unless}}{{_ 'change-avatar'}}: {{userData.username}}")
           if hasAvatarUrl
             .avatar
               img.avatar-image(src="{{avatarSrc userData.profile.avatarUrl}}", alt="{{userData.username}}", title="{{_ 'change-avatar'}}")
@@ -255,7 +255,7 @@ template(name="peopleRow")
         <s>{{ userData.username }}</s>
     else if isUserLocked
       td.username
-        a.js-edit-people-avatar(data-user-id=userData._id)
+        a.js-edit-people-avatar(data-user-id=userData._id aria-label="{{#unless hasAvatarUrl}}{{userData.getInitials}} {{/unless}}{{_ 'change-avatar'}}: {{userData.username}}")
           if hasAvatarUrl
             .avatar
               img.avatar-image(src="{{avatarSrc userData.profile.avatarUrl}}", alt="{{userData.username}}", title="{{_ 'change-avatar'}}")
@@ -264,7 +264,7 @@ template(name="peopleRow")
         | {{ userData.username }}
     else
       td.username
-        a.js-edit-people-avatar(data-user-id=userData._id)
+        a.js-edit-people-avatar(data-user-id=userData._id aria-label="{{#unless hasAvatarUrl}}{{userData.getInitials}} {{/unless}}{{_ 'change-avatar'}}: {{userData.username}}")
           if hasAvatarUrl
             .avatar
               img.avatar-image(src="{{avatarSrc userData.profile.avatarUrl}}", alt="{{userData.username}}", title="{{_ 'change-avatar'}}")
@@ -321,10 +321,10 @@ template(name="peopleRow")
       td {{ displayDate userData.createdAt 'LLL' }}
     if userData.loginDisabled
       td
-        input.selectUserChkBox(type="checkbox", disabled="disabled", id="{{userData._id}}")
+        input.selectUserChkBox(type="checkbox", disabled="disabled", id="{{userData._id}}", aria-label="{{userData.username}}")
     else
       td
-        input.selectUserChkBox(type="checkbox", id="{{userData._id}}")
+        input.selectUserChkBox(type="checkbox", id="{{userData._id}}", aria-label="{{userData.username}}")
 
 template(name="editOrgPopup")
   form
@@ -736,6 +736,20 @@ template(name="settingsUserPopup")
       a.impersonate-user
         i.fa.fa-user
         | {{_ 'impersonate-user'}}
+    //- P3 (docs/Compliance/README.md): emergency access. Ticked, the
+    //- impersonation is recorded as emergency access with the note, and every
+    //- other administrator gets an e-mail at once (server/models/users.js
+    //- impersonate, models/lib/emergencyAccess.js).
+    //- P3: end every session of this account (adminLogoutUser, audited).
+    li
+      a.js-admin-logout-user
+        i.fa.fa-sign-out
+        | {{_ 'log-out-everywhere'}}
+    li.impersonate-emergency
+      label
+        input.js-impersonate-emergency(type="checkbox")
+        |  {{_ 'impersonate-emergency'}}
+      textarea.js-impersonate-note.wekan-form-control(rows="2" maxlength="500" placeholder="{{_ 'impersonate-emergency-note'}}" aria-label="{{_ 'impersonate-emergency-note'}}")
     br
     hr
     li
@@ -834,7 +848,7 @@ template(name="rolesGeneral")
             button.js-custom-role-delete {{_ 'delete'}}
 
     //- Roles Status: what each board role may do, READ-ONLY, below the Save
-    //- button. It is the shared table page (docs/Features/General/Table.md), so it
+    //- button. It is the shared table page (docs/Features/Table.md), so it
     //- looks and behaves like every other Admin Panel table, and it follows the
     //- checkboxes ABOVE the Save button - the working copy, not the saved
     //- document - so an admin can see the effect of a change before saving it.

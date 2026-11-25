@@ -5,6 +5,21 @@ each one changed and the project status are in
 Written by `node releases/changelog-short.mjs` from CHANGELOG-big.md:
 make changes there.
 
+# v13.31 2026-11-25 WeKan ® release
+
+A person can **download everything WeKan holds about them**
+and **be erased everywhere**; an operator publishes a **privacy notice, terms
+and imprint**, can **require accepting them**, and limits how long records are
+kept. Administrators **export their lists as CSV**, see **who downloaded what**,
+check a **Compliance** checklist; the pages pass **WCAG 2.2 AA** checks, and
+every
+release carries a **CycloneDX SBOM**, with **security.txt** from the security
+contact. **Problems / Summary** groups **sign-in refusals by reason** with the
+fix for each, the **delay after a wrong password** is applied at last, the
+**Docker image is distroless**, and the server tests pass again.
+
+[All changes in v13.31](CHANGELOG-big.md#v1331-2026-11-25-wekan--release)
+
 # v13.30 2026-11-23 WeKan ® release
 
 The **wekan-ondra** and **wekan-gantt-gpl** snaps are published on
@@ -45,16 +60,3 @@ links already in a card's text in linear time, so a description built of
 thousands of brackets no longer takes seconds to render.
 
 [All changes in v13.27](CHANGELOG-big.md#v1327-2026-11-22-wekan--release)
-
-# v13.26 2026-11-22 WeKan ® release
-
-New **Workload and capacity**, **Budget and billing** and **Cloud
-Panel** pages: hours against working time, each board's cost and margin with
-**expenses**, **fees**, **quotes** and **invoices** in **PDF**, **Excel** and
-**e-invoice**, and many customer domains merged into one WeKan. WordPress,
-Ghost, Blogger and static sites import and export under **Website**, and a
-public board can show itself as a **website**. The **Venda** and **Klingon**
-translations hold only their own language, the move and copy pickers show names
-without numbers (#6135), and unused code is removed.
-
-[All changes in v13.26](CHANGELOG-big.md#v1326-2026-11-22-wekan--release)

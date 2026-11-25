@@ -1,0 +1,72 @@
+/* WP-8: the pages to accept, over everything, until they are accepted. */
+.legal-acceptance-required {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.6);
+}
+.legal-acceptance-box {
+  max-width: 32rem;
+  width: calc(100% - 2rem);
+  margin: 1rem;
+  padding: 1.5rem;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+}
+.legal-acceptance-box h2 {
+  margin-top: 0;
+}
+.legal-acceptance-page {
+  display: block;
+  margin: 0.5rem 0;
+}
+.legal-acceptance-error {
+  color: #b00020;
+}
+.legal-acceptances {
+  margin: 0.5rem 1rem;
+  font-size: 0.9em;
+}
+/* Native checkboxes, labelled: the global material form rules hide every
+   checkbox (as in scrumView.css), which left the acceptance dialog, the sign-up
+   box and the Legal pages switches with nothing to tick. The label around each
+   is the target, so the whole line ticks it. */
+.legal-acceptance-page input[type="checkbox"],
+.legal-page-check input[type="checkbox"],
+.impersonate-emergency input[type="checkbox"],
+.attachment-encryption-new input[type="checkbox"] {
+  display: inline-block;
+  visibility: visible;
+  position: static;
+  inset-inline-start: auto;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  flex: 0 0 18px;
+  padding: 0;
+  margin: 0 0.4rem 0 0;
+  vertical-align: middle;
+  appearance: auto;
+  cursor: pointer;
+}
+.legal-acceptance-page,
+.legal-page-check,
+.impersonate-emergency label,
+.attachment-encryption-new {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 24px;
+  cursor: pointer;
+}
+.js-legal-accept-submit[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Emergency access in People's user popup (P3): the note under the box. */
+.impersonate-emergency textarea { width: 100%; margin-block: 0.25rem 0.5rem; }

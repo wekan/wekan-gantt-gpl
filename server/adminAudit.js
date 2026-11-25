@@ -8,8 +8,9 @@ import { deferArgumentAudit, applyAudited } from '/server/lib/argumentChecks';
 // a site administrator, one document each. Which methods, and what of their
 // arguments is kept (never a password or a secret), is in
 // models/lib/adminAudit.js.
-const { AUDITED_METHODS, auditedMutationMethods, AUDIT_KEEP_DAYS, auditArgs } = require('/models/lib/adminAudit');
+const { AUDITED_METHODS, auditedMutationMethods, auditArgs } = require('/models/lib/adminAudit');
 const { resolveClientKey } = require('/server/lib/loginAttemptThrottle');
+const { writeStdout } = require('/models/lib/auditStdout');
 
 export const AdminAuditLog = new Mongo.Collection('adminAuditLog');
 
@@ -32,7 +33,7 @@ function clientAddress(connection) {
 
 async function record(invocation, actor, method, args, error) {
   try {
-    await AdminAuditLog.insertAsync({
+    const doc = {
       at: new Date(),
       actorId: actor._id,
       actorUsername: actor.username || '',
@@ -41,7 +42,11 @@ async function record(invocation, actor, method, args, error) {
       ok: !error,
       error: error ? String(error.error || error.message || error).slice(0, 200) : undefined,
       ip: clientAddress(invocation.connection),
-    });
+    };
+    // Hash-chained (models/lib/auditChain.js, P3).
+    const row = await require('/server/lib/auditChainAppend').appendAuditRow(doc);
+    // AUDIT_LOG_STDOUT=json (WP-11): the same row, as stored, on stdout.
+    writeStdout('audit', row && row.hash ? { ...doc, seq: row.seq, hash: row.hash } : doc);
   } catch (e) {
     // The audit trail must never change what the method did or answered.
     console.error('[admin-audit] could not record', method, e && e.message);
@@ -85,6 +90,13 @@ export function wrapAuditedMethods() {
 }
 
 Meteor.methods({
+  // The chain, verified now (models/lib/auditChain.js): rows checked, rows
+  // from before the chain, and where it is broken. Site administrators.
+  async verifyAdminAuditChain() {
+    const user = this.userId && await Meteor.users.findOneAsync(this.userId, { fields: { isAdmin: 1, loginDisabled: 1 } });
+    if (!user || user.isAdmin !== true || user.loginDisabled === true) throw new Meteor.Error('error-notAuthorized');
+    return require('/server/lib/auditChainAppend').verifyAuditChain();
+  },
   // One page of the trail, newest first; a search matches the administrator
   // or the action. Site administrators only - a per-tenant admin's actions
   // are in it, but the trail is the whole site's.
@@ -111,9 +123,14 @@ Meteor.methods({
   },
 });
 
+// ADMIN_AUDIT_RETENTION_DAYS (models/lib/retentionSettings.js, WP-7): 365 by
+// default (AUDIT_KEEP_DAYS), 0 keeps the log; a HIPAA deployment sets 2190.
 async function prune() {
   try {
-    await AdminAuditLog.removeAsync({ at: { $lt: new Date(Date.now() - AUDIT_KEEP_DAYS * DAY_MS) } });
+    const { retentionDays, cutoffDate } = require('/models/lib/retentionSettings');
+    const cutoff = cutoffDate(retentionDays('ADMIN_AUDIT_RETENTION_DAYS', { ADMIN_AUDIT_RETENTION_DAYS: process.env.ADMIN_AUDIT_RETENTION_DAYS }));
+    if (!cutoff) return;
+    await AdminAuditLog.removeAsync({ at: { $lt: cutoff } });
   } catch (e) {
     console.error('[admin-audit] pruning failed:', e && e.message);
   }
@@ -123,6 +140,11 @@ Meteor.startup(async () => {
   wrapAuditedMethods();
   Meteor.defer(wrapAuditedMethods);
   await ensureIndex(AdminAuditLog, { at: -1 });
+  await ensureIndex(AdminAuditLog, { seq: -1 });
+  // The chain, verified once a day (Admin Panel / Problems / Integrity).
+  Meteor.setInterval(() => {
+    require('/server/lib/auditChainAppend').verifyAuditChain().catch(e => console.error('[admin-audit] chain check failed:', e && e.message));
+  }, DAY_MS);
   Meteor.setInterval(prune, DAY_MS);
   Meteor.defer(prune);
 });

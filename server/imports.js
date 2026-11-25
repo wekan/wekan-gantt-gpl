@@ -118,6 +118,8 @@ import '/server/lib/cpuMonitor';
 import '/server/lib/ramMonitor';
 // docs/Compliance/README.md WP-2: sign-in addresses expire.
 import '/server/lib/loginAddressRetention';
+import '/server/lib/activitiesRetention';
+import '/server/lib/workloadAbsenceRetention';
 import '/server/lib/diskMonitor';
 import '/server/lib/selfChecks';
 import '/server/models/actions';
@@ -184,6 +186,7 @@ import '/server/crossSiteRequestGuard';
 // PASSWORD_MIN_LENGTH: an older, shorter password is changed after signing in.
 import '/server/passwordChangeRequired';
 import '/server/requireTwoFactor';
+import '/server/requireLegalAcceptance';
 import '/server/adminAudit';
 import '/server/header-login';
 import '/server/nextcloud';
@@ -266,6 +269,11 @@ import '/server/methods/fixDuplicateLists';
 import '/server/methods/icsImport';
 import '/server/methods/lockedUsers';
 import '/server/methods/lockoutSettings';
+import '/server/methods/legalPages';
+import '/server/methods/complianceChecks';
+import '/server/methods/sessions';
+import '/server/lib/attachmentEncryptionRun';
+import '/server/lib/loginRefusals';
 import '/server/methods/migrateTextDatabase';
 import '/server/methods/repairBoardData';
 import '/server/models/changeHistory';
@@ -430,9 +438,13 @@ import '/server/routes/attachmentApi';
 import '/server/routes/avatarServer';
 import '/server/routes/cardOgTags';
 import '/server/routes/customHeadAssets';
+import '/server/routes/securityTxt';
 import '/server/routes/importTrelloZip';
 import '/server/routes/importUpload';
 import '/server/routes/exportAllBoards';
+import '/server/routes/personalDataExport';
+import '/server/routes/adminCsvExport';
+import '/server/lib/dataAccessLog';
 // Reply-by-email (#2414). Never imported before ReplyBleed was fixed, so the
 // endpoint the docs describe did not exist.
 import '/server/routes/inboundEmail';
@@ -540,9 +552,9 @@ import '/server/methods/instrumentationReport';
 import '/server/moveBoardObjects';
 
 import '/server/scrum';
-// Workload and capacity (docs/Features/Workload/Workload.md).
+// Workload and capacity (docs/Features/Workload/README.md).
 import '/server/workload';
-// Budget and billing (docs/Features/Billing/Billing.md).
+// Budget and billing (docs/Features/Billing/README.md).
 import '/server/billing';
 // Board View / Shop: Board Settings / Shop and the orders (models/lib/shop.js).
 import '/server/shop';

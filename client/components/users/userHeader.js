@@ -1,3 +1,4 @@
+import { Accounts } from 'meteor/accounts-base';
 import '/client/components/forms/dateFormatSettings';
 import { accountOperationErrorKey } from '/client/lib/accountOperationError';
 import { languageFlags, languageLabelParts } from '/imports/i18n/languageFlags';
@@ -33,6 +34,34 @@ Template.headerUserBar.events({
 
 Template.memberMenuPopup.onCreated(function () {
   Meteor.subscribe('setting');
+});
+
+Template.privacyAndMyDataPopup.onCreated(function () {
+  this.sessions = new ReactiveVar([]);
+  this.reloadSessions = () => Meteor.call('getMySessions', (error, rows) => { if (!error && Array.isArray(rows)) this.sessions.set(rows); });
+  this.reloadSessions();
+  this.loginHistory = new ReactiveVar([]);
+  Meteor.call('getMyLoginHistory', (error, rows) => { if (!error && Array.isArray(rows)) this.loginHistory.set(rows); });
+});
+
+Template.privacyAndMyDataPopup.events({
+  // Ends one session; ending this browser's signs it out (Meteor closes it).
+  'click .js-end-session'(event, tpl) {
+    event.preventDefault();
+    Meteor.call('endMySession', event.currentTarget.dataset.session, () => tpl.reloadSessions());
+  },
+});
+
+Template.privacyAndMyDataPopup.helpers({
+  myLoginHistory() { return Template.instance().loginHistory.get(); },
+  mySessions() { return Template.instance().sessions.get(); },
+  date(value) { return value ? new Date(value).toLocaleDateString() : ''; },
+  // "Download my data" (WP-5): the person's own export, signed in by token
+  // like the board exports' downloads.
+  myDataUrl() {
+    const params = new URLSearchParams({ authToken: Accounts._storedLoginToken() || '' });
+    return `/api/user/export?${params.toString()}`;
+  },
 });
 
 Template.memberMenuPopup.helpers({
@@ -112,6 +141,7 @@ Template.memberMenuPopup.events({
   },
   'click .js-invite-people': Popup.open('invitePeople'),
   'click .js-edit-profile': Popup.open('editProfile'),
+  'click .js-privacy-and-my-data': Popup.open('privacyAndMyData'),
   'click .js-member-date-settings': Popup.open('memberDateSettings', { titleKey: 'date' }),
   'click .js-change-settings': Popup.open('changeSettings'),
   'click .js-change-color': Popup.open('changeColor'),

@@ -63,6 +63,8 @@ const ADMIN_PAGES = {
       delete: 'delete-setting',
       announcement: 'announcement-setting',
       accessibility: 'accessibility-setting',
+      // WP-6: the legal pages and the privacy contacts.
+      privacy: 'legal-pages-setting',
       translation: 'translation-setting',
       pwa: 'layout-setting',
       'global-webhooks': 'webhook-setting',
@@ -110,6 +112,8 @@ const ADMIN_PAGES = {
     defaultSlug: 'summary',
     panes: {
       summary: 'report-summary',
+      // What the laws and standards look for, checked (models/lib/complianceChecks.js).
+      compliance: 'report-compliance',
       // The Admin Panel backup's status and history (backupRunsStatus.jade).
       backup: 'features-backup',
       'security-report': 'report-security',
@@ -154,6 +158,8 @@ const ADMIN_PAGES = {
       'default-save-storage': 'default-save-storage',
       limits: 'limits',
       retention: 'retention',
+      // ATTACHMENTS_PASSPHRASE only (server/lib/attachmentEncryptionRun.js).
+      encrypt: 'encrypt',
       gridfs: 'gridfs',
       filesystem: 'filesystem',
       s3: 's3',
@@ -188,6 +194,7 @@ const ADMIN_PANE_TITLES = {
     delete: { titleKey: 'delete' },
     announcement: { titleKey: 'admin-announcement' },
     accessibility: { titleKey: 'accessibility' },
+    privacy: { titleKey: 'legal-pages' },
     translation: { titleKey: 'translation' },
     pwa: { title: 'PWA' },
     'global-webhooks': { titleKey: 'global-webhook' },
@@ -215,6 +222,7 @@ const ADMIN_PANE_TITLES = {
   },
   problems: {
     summary: { titleKey: 'summary' },
+    compliance: { titleKey: 'compliance' },
     backup: { titleKey: 'backup' },
     'security-report': { titleKey: 'securityReportTitle' },
     impersonation: { titleKey: 'impersonationReportTitle' },
@@ -245,6 +253,7 @@ const ADMIN_PANE_TITLES = {
     move: { titleKey: 'attachment-move' },
     'default-save-storage': { titleKey: 'default-save-storage' },
     limits: { titleKey: 'attachment-limits' },
+    encrypt: { titleKey: 'attachment-encryption' },
     retention: { titleKey: 'attachment-retention' },
     gridfs: { titleKey: 'mongodb-gridfs-storage' },
     filesystem: { titleKey: 'filesystem-storage' },
